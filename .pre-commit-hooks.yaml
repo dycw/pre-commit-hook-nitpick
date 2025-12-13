@@ -1,0 +1,7 @@
+- id: nitpick
+  name: nitpick
+  entry: ./script.py
+  language: unsupported_script
+  always_run: true
+  pass_filenames: false
+  description: Nitpick your repo
