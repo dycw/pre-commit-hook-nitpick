@@ -14,6 +14,8 @@ from logging import getLogger
 from pathlib import Path
 
 from click import command, option
+from tomlkit import dumps, parse
+from tomlkit.container import Container
 from utilities.click import CONTEXT_SETTINGS_HELP_OPTION_NAMES
 from utilities.logging import basic_config
 
@@ -39,7 +41,17 @@ def main(*, pyproject_build_system: bool = False, dry_run: bool = False) -> None
 
 def _add_pyproject_build_system() -> None:
     _add_pyproject()
-    _LOGGER.info("Adding `pyproject.toml` [build-system]")
+    path = Path("pyproject.toml")
+    existing = parse(path.read_text())
+    new = existing.copy()
+    new.setdefault("build-system", {})
+    if not isinstance(build_system := new["build-system"], Container):
+        raise TypeError(build_system)
+    build_system["build-backend"] = "uv_build"
+    build_system["requires"] = ["uv_build"]
+    if new != existing:
+        _LOGGER.info("Adding `pyproject.toml` [build-system]...")
+        _ = path.write_text(dumps(new))
 
 
 def _add_pyproject() -> None:
