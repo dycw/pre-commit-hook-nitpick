@@ -25,6 +25,7 @@ import tomlkit
 import yaml
 from click import command
 from tomlkit import TOMLDocument, aot, array, document, table
+from tomlkit.exceptions import NonExistentKey
 from tomlkit.items import AoT, Array, Table
 from typed_settings import click_options, option, settings
 from utilities.click import CONTEXT_SETTINGS_HELP_OPTION_NAMES
@@ -32,7 +33,7 @@ from utilities.functions import ensure_class
 from utilities.iterables import OneEmptyError, one
 from utilities.logging import basic_config
 from utilities.pathlib import get_repo_root
-from utilities.version import Version, parse_version
+from utilities.version import Version, VersionLike, parse_version
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -47,6 +48,7 @@ _MODIFIED = ContextVar("modified", default=False)
 
 @settings
 class Settings:
+    code_version: str = option(default="0.1.0", help="Code version")
     python_version: str = option(default="3.14", help="Python version")
     pre_commit_dockerfmt: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' dockerfmt"
@@ -108,7 +110,7 @@ def main(settings: Settings, /) -> None:
         _LOGGER.info("Dry run; exiting...")
         return
     _LOGGER.info("Running...")
-    _run_bump_my_version()
+    _run_bump_my_version(version=settings.code_version)
     _add_pre_commit()
     if settings.pre_commit_dockerfmt:
         _add_pre_commit_dockerfmt()
@@ -451,19 +453,18 @@ def _get_table(obj: Container | Table, key: str, /) -> Table:
     return ensure_class(obj.setdefault(key, table()), Table)
 
 
-def _run_bump_my_version() -> None:
+def _run_bump_my_version(*, version: VersionLike = _SETTINGS.code_version) -> None:
     if search("template", str(get_repo_root())):
         return
-    with _yield_bump_my_version() as doc:
+    with _yield_bump_my_version(version=version) as doc:
         current = _get_version(doc)
         try:
             text = check_output(
                 ["git", "show", "origin/master:.bumpversion.toml"], text=True
             ).rstrip("\n")
-        except CalledProcessError:
-            prev = Version(0, 1, 0)
-        else:
             prev = _get_version(text)
+        except (CalledProcessError, NonExistentKey):
+            prev = Version(0, 1, 0)
         patch = prev.bump_patch()
         if current not in {patch, prev.bump_minor(), prev.bump_major()}:
             tool = _get_table(doc, "tool")
@@ -473,11 +474,14 @@ def _run_bump_my_version() -> None:
 
 
 @contextmanager
-def _yield_bump_my_version() -> Iterator[TOMLDocument]:
+def _yield_bump_my_version(
+    *, version: VersionLike = _SETTINGS.code_version
+) -> Iterator[TOMLDocument]:
     with _yield_toml_doc(".bumpversion.toml") as doc:
         tool = _get_table(doc, "tool")
         bumpversion = _get_table(tool, "bumpversion")
         bumpversion["allow_dirty"] = True
+        bumpversion.setdefault("current_version", str(version))
         yield doc
 
 
