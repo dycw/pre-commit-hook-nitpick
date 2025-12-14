@@ -30,6 +30,7 @@ from tomlkit import TOMLDocument, aot, array, document, table
 from tomlkit.exceptions import NonExistentKey
 from tomlkit.items import AoT, Array, Table
 from typed_settings import click_options, option, settings
+from utilities.atomicwrites import writer
 from utilities.click import CONTEXT_SETTINGS_HELP_OPTION_NAMES
 from utilities.functions import ensure_class
 from utilities.iterables import OneEmptyError, one
@@ -495,7 +496,8 @@ def _run_pre_commit_update() -> None:
 
     def run() -> None:
         _ = check_call(["pre-commit", "autoupdate"])
-        _ = path.write_text(get_now().format_iso())
+        with writer(path, overwrite=True) as temp:
+            _ = temp.write_text(get_now().format_iso())
         _ = _MODIFIED.set(True)
 
     try:
@@ -686,29 +688,31 @@ def _yield_ruff(
 @contextmanager
 def _yield_write_context[T](
     path: PathLike,
-    reader: Callable[[str], T],
+    loads: Callable[[str], T],
     get_default: Callable[[], T],
-    writer: Callable[[T], str],
+    dumps: Callable[[T], str],
     /,
     *,
     desc: str | None = None,
 ) -> Iterator[T]:
     path = Path(path)
-    desc_use = "" if desc is None else f" {desc}"
+
+    def run(verb: str, data: T, /) -> None:
+        _LOGGER.info("%s '%s'%s...", verb, path, "" if desc is None else f" {desc}")
+        with writer(path, overwrite=True) as temp:
+            _ = temp.write_text(dumps(data))
+        _ = _MODIFIED.set(True)
+
     try:
-        data = reader(path.read_text())
+        data = loads(path.read_text())
     except FileNotFoundError:
         yield (default := get_default())
-        _LOGGER.info("Writing '%s'%s...", path, desc_use)
-        _ = path.write_text(writer(default))
-        _ = _MODIFIED.set(True)
+        run("Writing", default)
     else:
         yield data
-        current = reader(path.read_text())
+        current = loads(path.read_text())
         if data != current:
-            _LOGGER.info("Adding '%s'%s...", path, desc_use)
-            _ = path.write_text(writer(data))
-            _ = _MODIFIED.set(True)
+            run("Adding", data)
 
 
 @contextmanager
