@@ -55,7 +55,7 @@ class Settings:
         default=None, help="Set up 'pyproject.toml' [[uv.tool.index]]"
     )
     pyright: bool = option(default=False, help="Set up 'pyrightconfig.json'")
-    pyright_include: list[str] | None = option(
+    pyright_include: list[Path] | None = option(
         default=None, help="Set up 'pyrightconfig.json' [include]"
     )
     pytest: bool = option(default=False, help="Set up 'pytest.toml'")
@@ -97,8 +97,7 @@ def main(settings: Settings, /) -> None:
     if settings.pyright:
         _add_pyrightconfig(version=settings.version)
     if (include := settings.pyright_include) is not None:
-        assert 0, include
-        _add_pyrightconfig_include(include, version=version)
+        _add_pyrightconfig_include(*include, version=version)
     if settings.pytest:
         _add_pytest()
     if settings.pytest_asyncio:
@@ -119,6 +118,14 @@ def _add_pyproject(*, version: str = _SETTINGS.version) -> None:
 def _add_pyrightconfig(*, version: str = _SETTINGS.version) -> None:
     with _yield_pyrightconfig("", version=version):
         ...
+
+
+def _add_pyrightconfig_include(
+    *paths: PathLike, version: str = _SETTINGS.version
+) -> None:
+    with _yield_pyrightconfig("", version=version) as dict_:
+        include = _get_list(dict_, "include")
+        _ensure_in_array(include, *map(str, paths))
 
 
 def _add_pytest() -> None:
@@ -204,7 +211,7 @@ def _ensure_in_aot(array: AoT, /, *tables: Table) -> None:
             array.append(table_)
 
 
-def _ensure_in_array(array: Array, /, *objs: Any) -> None:
+def _ensure_in_array(array: Array | list[Any], /, *objs: Any) -> None:
     for obj in objs:
         if obj not in array:
             array.append(obj)
@@ -233,6 +240,10 @@ def _get_json_dict(path: PathLike, /) -> dict[str, Any]:
         return json.loads(Path(path).read_text())
     except FileNotFoundError:
         return {}
+
+
+def _get_list(obj: dict[str, Any], key: str, /) -> list[Any]:
+    return ensure_class(obj.setdefault(key, []), list)
 
 
 def _get_toml_doc(path: PathLike, /) -> TOMLDocument:
@@ -282,13 +293,10 @@ def _yield_pyproject(
 @contextmanager
 def _yield_pyrightconfig(
     desc: str, /, *, version: str = _SETTINGS.version
-) -> Iterator[TOMLDocument]:
+) -> Iterator[dict[str, Any]]:
     with _yield_json_dict("pyrightconfig.json", desc) as dict_:
         dict_["deprecateTypingAliases"] = True
         dict_["enableReachabilityAnalysis"] = False
-        # "include": [
-        # "src"
-        # ],
         dict_["pythonVersion"] = version
         dict_["reportCallInDefaultInitializer"] = True
         dict_["reportImplicitOverride"] = True
