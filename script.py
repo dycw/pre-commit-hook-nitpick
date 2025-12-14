@@ -75,7 +75,7 @@ class Settings:
         default=None, help="Set up 'pyproject.toml' [[uv.tool.index]]"
     )
     pyright: bool = option(default=False, help="Set up 'pyrightconfig.json'")
-    pyright_include: list[Path] | None = option(
+    pyright_include: list[str] | None = option(
         default=None, help="Set up 'pyrightconfig.json' [include]"
     )
     pytest: bool = option(default=False, help="Set up 'pytest.toml'")
@@ -245,12 +245,10 @@ def _add_pyrightconfig(*, version: str = _SETTINGS.version) -> None:
         ...
 
 
-def _add_pyrightconfig_include(
-    *paths: PathLike, version: str = _SETTINGS.version
-) -> None:
+def _add_pyrightconfig_include(*paths: str, version: str = _SETTINGS.version) -> None:
     with _yield_pyrightconfig("", version=version) as dict_:
         include = _get_list(dict_, "include")
-        _ensure_in_array(include, *map(str, paths))
+        _ensure_in_array(include, *paths)
 
 
 def _add_pytest() -> None:
