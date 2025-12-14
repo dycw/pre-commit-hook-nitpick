@@ -18,7 +18,7 @@ from contextvars import ContextVar
 from logging import getLogger
 from pathlib import Path
 from re import search
-from subprocess import check_output
+from subprocess import CalledProcessError, check_output
 from typing import TYPE_CHECKING, Any, Literal, assert_never
 
 import tomlkit
@@ -452,19 +452,24 @@ def _get_table(obj: Container | Table, key: str, /) -> Table:
 
 
 def _run_bump_my_version() -> None:
-    if not search("template", str(get_repo_root())):
-        text = check_output(
-            ["git", "show", "origin/master:.bumpversion.toml"], text=True
-        ).rstrip("\n")
-        prev = _get_version(text)
-        with _yield_bump_my_version() as doc:
-            current = _get_version(doc)
-            patch = prev.bump_patch()
-            if current not in {patch, prev.bump_minor(), prev.bump_major()}:
-                tool = _get_table(doc, "tool")
-                bumpversion = _get_table(tool, "bumpversion")
-                bumpversion["current_version"] = str(patch)
-                _ = _MODIFIED.set(True)
+    if search("template", str(get_repo_root())):
+        return
+    with _yield_bump_my_version() as doc:
+        current = _get_version(doc)
+        try:
+            text = check_output(
+                ["git", "show", "origin/master:.bumpversion.toml"], text=True
+            ).rstrip("\n")
+        except CalledProcessError:
+            prev = Version(0, 1, 0)
+        else:
+            prev = _get_version(text)
+        patch = prev.bump_patch()
+        if current not in {patch, prev.bump_minor(), prev.bump_major()}:
+            tool = _get_table(doc, "tool")
+            bumpversion = _get_table(tool, "bumpversion")
+            bumpversion["current_version"] = str(patch)
+            _ = _MODIFIED.set(True)
 
 
 @contextmanager
