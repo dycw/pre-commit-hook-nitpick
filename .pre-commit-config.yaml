@@ -25,7 +25,7 @@ repos:
             reorder_keys=true,
           ]
   - repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: 0.1.13
+    rev: 0.1.15
     hooks:
       - id: nitpick
   - repo: https://github.com/dycw/pre-commit-hooks
