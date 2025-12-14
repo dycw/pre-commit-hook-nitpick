@@ -26,6 +26,7 @@ from tomlkit.items import AoT, Array, Table
 from typed_settings import click_options, option, settings
 from utilities.click import CONTEXT_SETTINGS_HELP_OPTION_NAMES
 from utilities.functions import ensure_class
+from utilities.iterables import OneEmptyError, one
 from utilities.logging import basic_config
 
 if TYPE_CHECKING:
@@ -43,6 +44,9 @@ class Settings:
     version: str = option(default="3.14", help="Python version")
     pre_commit_ruff: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' [ruff-pre-commit]"
+    )
+    pre_commit_uv: bool = option(
+        default=False, help="Set up '.pre-commit-config.yaml' [uv-pre-commit]"
     )
     pyproject: bool = option(default=False, help="Set up 'pyproject.toml'")
     pyproject__dependency_groups__dev: bool = option(
@@ -118,17 +122,53 @@ def main(settings: Settings, /) -> None:
 
 def _add_pre_commit() -> None:
     with _yield_pre_commit("") as dict_:
-        repos = _get_list(dict_, "repos")
-        _ensure_partial_dict_in_array(
-            repos,
-            {"repo": "https://github.com/dycw/pre-commit-hook-nitpick"},
-            {"rev": "master", "hooks": [{"id": "nitpicke"}]},
+        _ensure_pre_commit_repo(
+            dict_, "https://github.com/dycw/pre-commit-hook-nitpick", "nitpick"
+        )
+
+
+def _add_pre_commit_dockerfmt() -> None:
+    with _yield_pre_commit("[dockerfmt]") as dict_:
+        _ensure_pre_commit_repo(
+            dict_,
+            "https://github.com/reteps/dockerfmt",
+            "dockerfmt",
+            args=["--newline", "--write"],
         )
 
 
 def _add_pre_commit_ruff() -> None:
+    url = "https://github.com/astral-sh/ruff-pre-commit"
     with _yield_pre_commit("[ruff-pre-commit]") as dict_:
-        _get_list(dict_, "repos")
+        _ensure_pre_commit_repo(dict_, url, "ruff-check", args=["--fix"])
+        _ensure_pre_commit_repo(dict_, url, "ruff-format")
+
+
+def _add_pre_commit_taplo() -> None:
+    with _yield_pre_commit("[taplo-pre-commit]") as dict_:
+        _ensure_pre_commit_repo(
+            dict_,
+            "https://github.com/compwa/taplo-pre-commit",
+            "taplo-format",
+            args=[
+                "--option",
+                "indent_tables=true",
+                "--option",
+                "indent_entries=true",
+                "--option",
+                "reorder_keys=true",
+            ],
+        )
+
+
+def _add_pre_commit_uv() -> None:
+    with _yield_pre_commit("[uv-pre-commit]") as dict_:
+        repos = _get_list(dict_, "repos")
+        _ensure_partial_dict_in_array(
+            repos,
+            {"repo": "https://github.com/astral-sh/uv-pre-commit"},
+            {"rev": "master", "hooks": [{"id": "uv-lock", "args": ["--upgrade"]}]},
+        )
 
 
 def _add_pyproject(*, version: str = _SETTINGS.version) -> None:
@@ -249,16 +289,39 @@ def _ensure_not_in_array(array: Array, /, *objs: Any) -> None:
 
 
 def _ensure_partial_dict_in_array(
-    array: list[Any], partial: dict[str, Any], remainder: dict[str, Any], /
+    array: list[Any], partial: dict[str, Any], /, *, extra: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    try:
+        return one(
+            d
+            for d in array
+            if isinstance(d, dict)
+            and set(partial).issubset(d)
+            and all(d[k] == v for k, v in partial.items())
+        )
+    except OneEmptyError:
+        dict_ = partial | ({} if extra is None else extra)
+        array.append(dict_)
+        return dict_
+
+
+def _ensure_pre_commit_repo(
+    pre_commit_dict: dict[str, Any],
+    url: str,
+    id_: str,
+    /,
+    *,
+    args: list[str] | None = None,
 ) -> None:
-    if not any(
-        d
-        for d in array
-        if isinstance(d, dict)
-        and set(partial).issubset(d)
-        and all(d[k] == v for k, v in partial.items())
-    ):
-        array.append(partial | remainder)
+    repos_list = _get_list(pre_commit_dict, "repos")
+    repo_dict = _ensure_partial_dict_in_array(
+        repos_list, {"repo": url}, extra={"rev": "master"}
+    )
+    hooks_list = _get_list(repo_dict, "hooks")
+    hook_dict = _ensure_partial_dict_in_array(hooks_list, {"id": id_})
+    if args is not None:
+        hook_args = _get_list(hook_dict, "args")
+        _ensure_in_array(hook_args, *args)
 
 
 def _get_aot(obj: Container | Table, key: str, /) -> AoT:
