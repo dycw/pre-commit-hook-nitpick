@@ -1,7 +1,7 @@
 [tool]
   [tool.bumpversion]
     allow_dirty = true
-    current_version = "0.1.7"
+    current_version = "0.1.8"
 
   [tool.nitpick]
     style = [

@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 _LOGGER = getLogger(__name__)
 
 
-@settings()
+@settings
 class Settings:
     version: str = option(default="3.14", help="Python version")
     pre_commit_dockerfmt: bool = option(
