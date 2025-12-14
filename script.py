@@ -49,32 +49,36 @@ if TYPE_CHECKING:
 
 
 _LOGGER = getLogger(__name__)
+_CONFIGS = Path(__file__).parent / "configs"
 _MODIFIED = ContextVar("modified", default=False)
 
 
 @settings
 class Settings:
     code_version: str = option(default="0.1.0", help="Code version")
+    github__push_tag: bool = option(
+        default=False, help="Set up '.github/workflows/push--tag.yaml'"
+    )
     python_version: str = option(default="3.14", help="Python version")
-    pre_commit_dockerfmt: bool = option(
+    pre_commit__dockerfmt: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' dockerfmt"
     )
-    pre_commit_prettier: bool = option(
+    pre_commit__prettier: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' prettier"
     )
-    pre_commit_ruff: bool = option(
+    pre_commit__ruff: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' ruff"
     )
-    pre_commit_shell: bool = option(
+    pre_commit__shell: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' shell"
     )
-    pre_commit_taplo: bool = option(
+    pre_commit__taplo: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' taplo"
     )
-    pre_commit_uv: bool = option(
+    pre_commit__uv: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' uv"
     )
-    pre_commit_uv_script: str | None = option(
+    pre_commit__uv__script: str | None = option(
         default=None, help="Set up '.pre-commit-config.yaml' uv lock script"
     )
     pyproject: bool = option(default=False, help="Set up 'pyproject.toml'")
@@ -123,18 +127,20 @@ def main(settings: Settings, /) -> None:
     _run_bump_my_version(version=settings.code_version)
     _run_pre_commit_update()
     _add_pre_commit()
-    if settings.pre_commit_dockerfmt:
+    if settings.github__push_tag:
+        _add_github_push_tag()
+    if settings.pre_commit__dockerfmt:
         _add_pre_commit_dockerfmt()
-    if settings.pre_commit_prettier:
+    if settings.pre_commit__prettier:
         _add_pre_commit_prettier()
-    if settings.pre_commit_ruff:
+    if settings.pre_commit__ruff:
         _add_pre_commit_ruff()
-    if settings.pre_commit_shell:
+    if settings.pre_commit__shell:
         _add_pre_commit_shell()
-    if settings.pre_commit_taplo:
+    if settings.pre_commit__taplo:
         _add_pre_commit_taplo()
-    if settings.pre_commit_uv:
-        _add_pre_commit_uv(script=settings.pre_commit_uv_script)
+    if settings.pre_commit__uv:
+        _add_pre_commit_uv(script=settings.pre_commit__uv__script)
     if settings.pyproject:
         _add_pyproject(version=settings.python_version)
     if settings.pyproject__dependency_groups__dev:
@@ -166,6 +172,12 @@ def main(settings: Settings, /) -> None:
         _add_ruff(version=settings.python_version)
     if _MODIFIED.get():
         sys.exit(1)
+
+
+def _add_github_push_tag() -> None:
+    src = _CONFIGS / "push--tag.yaml"
+    dest = Path(".github/workflows") / src.name
+    _write_text_file(dest, src.read_text())
 
 
 def _add_pre_commit() -> None:
@@ -443,6 +455,24 @@ def _ensure_pre_commit_repo(
                 hook_dict["args"] = args_i
             case never:
                 assert_never(never)
+
+
+def _write_text_file(path: PathLike, text: str, /, *, desc: str | None = None) -> None:
+    path = Path(path)
+
+    def run(verb: str, /) -> None:
+        _LOGGER.info("%s '%s'%s...", verb, path, "" if desc is None else f" {desc}")
+        with writer(path, overwrite=True) as temp:
+            _ = temp.write_text(text)
+        _ = _MODIFIED.set(True)
+
+    try:
+        current = path.read_text()
+    except FileNotFoundError:
+        run("Writing")
+    else:
+        if text != current:
+            run("Adding")
 
 
 def _get_aot(obj: Container | Table, key: str, /) -> AoT:
