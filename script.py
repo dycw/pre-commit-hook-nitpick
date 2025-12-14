@@ -36,9 +36,10 @@ _LOGGER = getLogger(__name__)
 @settings()
 class Settings:
     pyproject__build_system: bool = False
-    pyproject__dependency_groups: bool = False
+    pyproject__dependency_groups__dev: bool = False
     pyproject__project__name: str | None = None
     pyproject__project__requires_python: str | None = None
+    pyproject__project__optional_dependencies__scripts: bool = False
     pyproject__tool__uv__indexes: str | None = None
     dry_run: bool = False
 
@@ -52,12 +53,14 @@ def main(settings: Settings, /) -> None:
     _LOGGER.info("Running...")
     if settings.pyproject__build_system:
         _add_pyproject_build_system()
-    if settings.pyproject__dependency_groups:
-        _add_pyproject_dependency_groups()
+    if settings.pyproject__dependency_groups__dev:
+        _add_pyproject_dependency_groups_dev()
     if (name := settings.pyproject__project__name) is not None:
         _add_pyproject_project_name(name)
     if (version := settings.pyproject__project__requires_python) is not None:
         _add_pyproject_project_requires_python(version)
+    if settings.pyproject__project__optional_dependencies__scripts:
+        _add_pyproject_project_optional_dependencies_scripts()
     if (indexes := settings.pyproject__tool__uv__indexes) is not None:
         for index in indexes.split("|"):
             name, url = index.split(",")
@@ -73,15 +76,15 @@ def _add_pyproject(*, path: PathLike = "pyproject.toml") -> None:
 
 def _add_pyproject_build_system(*, path: PathLike = "pyproject.toml") -> None:
     with _yield_pyproject("[build-system]", path=path) as doc:
-        bs = ensure_class(doc.setdefault("build-system", table()), Table)
-        bs["build-backend"] = "uv_build"
-        bs["requires"] = ["uv_build"]
+        bld_sys = ensure_class(doc.setdefault("build-system", table()), Table)
+        bld_sys["build-backend"] = "uv_build"
+        bld_sys["requires"] = ["uv_build"]
 
 
-def _add_pyproject_dependency_groups(*, path: PathLike = "pyproject.toml") -> None:
+def _add_pyproject_dependency_groups_dev(*, path: PathLike = "pyproject.toml") -> None:
     with _yield_pyproject("[dependency-groups]", path=path) as doc:
-        db = ensure_class(doc.setdefault("dependency-groups", table()), Table)
-        dev = ensure_class(db.setdefault("dev", array()), Array)
+        dep_grps = ensure_class(doc.setdefault("dependency-groups", table()), Table)
+        dev = ensure_class(dep_grps.setdefault("dev", array()), Array)
         if (dycw := "dycw-utilities[test]") not in dev:
             dev.append(dycw)
         if (rich := "rich") not in dev:
@@ -102,6 +105,19 @@ def _add_pyproject_project_requires_python(
     with _yield_pyproject("[project.name]", path=path) as doc:
         proj = ensure_class(doc.setdefault("project", table()), Table)
         proj["requires-python"] = f">={version}"
+
+
+def _add_pyproject_project_optional_dependencies_scripts(
+    *, path: PathLike = "pyproject.toml"
+) -> None:
+    with _yield_pyproject("[project.optional-dependencies.scripts]", path=path) as doc:
+        proj = ensure_class(doc.setdefault("project", table()), Table)
+        opt_deps = ensure_class(
+            proj.setdefault("optional-dependencies", table()), Table
+        )
+        scripts = ensure_class(opt_deps.setdefault("scripts", array()), Array)
+        if (click := "click >=8.3.1") not in scripts:
+            scripts.append(click)
 
 
 def _add_pyproject_uv_index(
