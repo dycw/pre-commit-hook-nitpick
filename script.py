@@ -51,12 +51,20 @@ class Settings:
     pyproject__tool__uv__indexes: str | None = option(
         default=None, help="Set up 'pyproject.toml' [[uv.tool.index]]"
     )
+    pytest: bool = option(default=False, help="Set up 'pytest.toml'")
+    pytest_asyncio: bool = option(
+        default=False, help="Set up 'pytest.toml' [pytest.asyncio_*]"
+    )
+    pytest_ignore_warnings: bool = option(
+        default=False, help="Set up 'pytest.toml' [pytest.filterwarnings]"
+    )
+    pytest_timeout: int | None = option(
+        default=False, help="Set up 'pytest.toml' [pytest.timeout]"
+    )
     ruff: bool = option(default=False, help="Set up 'ruff.toml'")
     dry_run: bool = option(default=False, help="Dry run the CLI")
 
 
-_PYPROJECT_TOML = Path("pyproject.toml")
-_RUFF_TOML = Path("ruff.toml")
 _SETTINGS = Settings()
 
 
@@ -79,6 +87,14 @@ def main(settings: Settings, /) -> None:
         for index in indexes.split("|"):
             name, url = index.split(",")
             _add_pyproject_uv_index(name, url, version=settings.version)
+    if settings.pytest:
+        _add_pytest()
+    if settings.pytest_asyncio:
+        _add_pytest_asyncio()
+    if settings.pytest_ignore_warnings:
+        _add_pytest_ignore_warnings()
+    if (timeout := settings.pytest_timeout) is not None:
+        _add_pytest_timeout(timeout)
     if settings.ruff:
         _add_ruff(version=settings.version)
 
@@ -86,6 +102,36 @@ def main(settings: Settings, /) -> None:
 def _add_pyproject(*, version: str = _SETTINGS.version) -> None:
     with _yield_pyproject("[]", version=version):
         ...
+
+
+def _add_pytest() -> None:
+    with _yield_pytest("[]"):
+        ...
+
+
+def _add_pytest_asyncio() -> None:
+    with _yield_pytest("[pytest.filterwarnings]") as doc:
+        pytest = _get_table(doc, "pytest")
+        pytest["asyncio_default_fixture_loop_scope"] = "function"
+        pytest["asyncio_mode"] = "auto"
+
+
+def _add_pytest_ignore_warnings() -> None:
+    with _yield_pytest("[pytest.asyncio_*]") as doc:
+        pytest = _get_table(doc, "pytest")
+        filterwarnings = _get_array(pytest, "filterwarnings")
+        _ensure_in_array(
+            filterwarnings,
+            "ignore::DeprecationWarning",
+            "ignore::ResourceWarning",
+            "ignore::RuntimeWarning",
+        )
+
+
+def _add_pytest_timeout(timeout: int, /) -> None:
+    with _yield_pytest("[pytest.timeout]") as doc:
+        pytest = _get_table(doc, "pytest")
+        pytest["timeout"] = str(timeout)
 
 
 def _add_ruff(*, version: str = _SETTINGS.version) -> None:
@@ -190,7 +236,7 @@ def _yield_toml_doc(path: PathLike, desc: str, /) -> Iterator[TOMLDocument]:
 def _yield_pyproject(
     desc: str, /, *, version: str = _SETTINGS.version
 ) -> Iterator[TOMLDocument]:
-    with _yield_toml_doc(_PYPROJECT_TOML, desc) as doc:
+    with _yield_toml_doc("pyproject.toml", desc) as doc:
         bld_sys = _get_table(doc, "build-system")
         bld_sys["build-backend"] = "uv_build"
         bld_sys["requires"] = ["uv_build"]
@@ -200,10 +246,35 @@ def _yield_pyproject(
 
 
 @contextmanager
+def _yield_pytest(desc: str, /) -> Iterator[TOMLDocument]:
+    with _yield_toml_doc("pytest.toml", desc) as doc:
+        pytest = _get_table(doc, "pytest")
+        addopts = _get_array(pytest, "addopts")
+        _ensure_in_array(
+            addopts,
+            "-ra",
+            "-vv",
+            "--color=auto",
+            "--durations=10",
+            "--durations-min=10",
+        )
+        pytest["collect_imported_tests"] = False
+        pytest["empty_parameter_set_mark"] = "fail_at_collect"
+        filterwarnings = _get_array(pytest, "filterwarnings")
+        _ensure_in_array(filterwarnings, "error")
+        pytest["minversion"] = "9.0"
+        pytest["strict"] = True
+        testpaths = _get_array(pytest, "testpaths")
+        _ensure_in_array(testpaths, "src/tests")
+        pytest["xfail_strict"] = True
+        yield doc
+
+
+@contextmanager
 def _yield_ruff(
     desc: str, /, *, version: str = _SETTINGS.version
 ) -> Iterator[TOMLDocument]:
-    with _yield_toml_doc(_RUFF_TOML, desc) as doc:
+    with _yield_toml_doc("ruff.toml", desc) as doc:
         doc["target-version"] = f"py{version.replace('.', '')}"
         doc["unsafe-fixes"] = True
         fmt = _get_table(doc, "format")
