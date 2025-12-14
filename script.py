@@ -16,7 +16,7 @@ import json
 from contextlib import contextmanager
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, assert_never
 
 import tomlkit
 import yaml
@@ -154,9 +154,13 @@ def _add_pre_commit() -> None:
         _ensure_pre_commit_repo(dict_, url, "destroyed-symlinks")
         _ensure_pre_commit_repo(dict_, url, "detect-private-key")
         _ensure_pre_commit_repo(dict_, url, "end-of-file-fixer")
-        _ensure_pre_commit_repo(dict_, url, "mixed-line-ending", args=["--fix=lf"])
+        _ensure_pre_commit_repo(
+            dict_, url, "mixed-line-ending", args=("add", ["--fix=lf"])
+        )
         _ensure_pre_commit_repo(dict_, url, "no-commit-to-branch")
-        _ensure_pre_commit_repo(dict_, url, "pretty-format-json", args=["--autofix"])
+        _ensure_pre_commit_repo(
+            dict_, url, "pretty-format-json", args=("add", ["--autofix"])
+        )
         _ensure_pre_commit_repo(dict_, url, "no-commit-to-branch")
         _ensure_pre_commit_repo(dict_, url, "trailing-whitespace")
 
@@ -167,7 +171,7 @@ def _add_pre_commit_dockerfmt() -> None:
             dict_,
             "https://github.com/reteps/dockerfmt",
             "dockerfmt",
-            args=["--newline", "--write"],
+            args=("add", ["--newline", "--write"]),
         )
 
 
@@ -187,7 +191,7 @@ def _add_pre_commit_prettier() -> None:
 def _add_pre_commit_ruff() -> None:
     url = "https://github.com/astral-sh/ruff-pre-commit"
     with _yield_pre_commit("[ruff-pre-commit]") as dict_:
-        _ensure_pre_commit_repo(dict_, url, "ruff-check", args=["--fix"])
+        _ensure_pre_commit_repo(dict_, url, "ruff-check", args=("add", ["--fix"]))
         _ensure_pre_commit_repo(dict_, url, "ruff-format")
 
 
@@ -207,14 +211,17 @@ def _add_pre_commit_taplo() -> None:
             dict_,
             "https://github.com/compwa/taplo-pre-commit",
             "taplo-format",
-            args=[
-                "--option",
-                "indent_tables=true",
-                "--option",
-                "indent_entries=true",
-                "--option",
-                "reorder_keys=true",
-            ],
+            args=(
+                "exact",
+                [
+                    "--option",
+                    "indent_tables=true",
+                    "--option",
+                    "indent_entries=true",
+                    "--option",
+                    "reorder_keys=true",
+                ],
+            ),
         )
 
 
@@ -224,7 +231,7 @@ def _add_pre_commit_uv() -> None:
             dict_,
             "https://github.com/astral-sh/uv-pre-commit",
             "uv-lock",
-            args=["--upgrade"],
+            args=("add", ["--upgrade"]),
         )
 
 
@@ -372,7 +379,7 @@ def _ensure_pre_commit_repo(
     entry: str | None = None,
     language: str | None = None,
     types_or: list[str] | None = None,
-    args: list[str] | None = None,
+    args: tuple[Literal["add", "exact"], list[str]] | None = None,
 ) -> None:
     repos_list = _get_list(pre_commit_dict, "repos")
     repo_dict = _ensure_partial_dict_in_array(
@@ -389,8 +396,14 @@ def _ensure_pre_commit_repo(
     if types_or is not None:
         hook_dict["types_or"] = types_or
     if args is not None:
-        hook_args = _get_list(hook_dict, "args")
-        _ensure_in_array(hook_args, *args)
+        match args:
+            case "add", list() as args_i:
+                hook_args = _get_list(hook_dict, "args")
+                _ensure_in_array(hook_args, *args_i)
+            case "exact", list() as args_i:
+                hook_dict["args"] = args_i
+            case never:
+                assert_never(never)
 
 
 def _get_aot(obj: Container | Table, key: str, /) -> AoT:
