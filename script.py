@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from contextlib import contextmanager
 from contextvars import ContextVar
 from logging import getLogger
@@ -29,6 +30,7 @@ from tomlkit import TOMLDocument, aot, array, document, table
 from tomlkit.exceptions import NonExistentKey
 from tomlkit.items import AoT, Array, Table
 from typed_settings import click_options, option, settings
+from utilities.atomicwrites import writer
 from utilities.click import CONTEXT_SETTINGS_HELP_OPTION_NAMES
 from utilities.functions import ensure_class
 from utilities.iterables import OneEmptyError, one
@@ -91,14 +93,15 @@ class Settings:
         factory=list, help="Set up 'pyrightconfig.json' [include]"
     )
     pytest: bool = option(default=False, help="Set up 'pytest.toml'")
-    pytest_asyncio: bool = option(
-        default=False, help="Set up 'pytest.toml' [pytest.asyncio_*]"
-    )
+    pytest_asyncio: bool = option(default=False, help="Set up 'pytest.toml' asyncio_*")
     pytest_ignore_warnings: bool = option(
-        default=False, help="Set up 'pytest.toml' [pytest.filterwarnings]"
+        default=False, help="Set up 'pytest.toml' filterwarnings"
+    )
+    pytest_test_paths: list[str] = option(
+        factory=list, help="Set up 'pytest.toml' testpaths"
     )
     pytest_timeout: int | None = option(
-        default=None, help="Set up 'pytest.toml' [pytest.timeout]"
+        default=None, help="Set up 'pytest.toml' timeout"
     )
     ruff: bool = option(default=False, help="Set up 'ruff.toml'")
     dry_run: bool = option(default=False, help="Dry run the CLI")
@@ -152,12 +155,14 @@ def main(settings: Settings, /) -> None:
         _add_pytest_asyncio()
     if settings.pytest_ignore_warnings:
         _add_pytest_ignore_warnings()
+    if len(test_paths := settings.pytest_test_paths) >= 1:
+        _add_pytest_test_paths(*test_paths)
     if (timeout := settings.pytest_timeout) is not None:
         _add_pytest_timeout(timeout)
     if settings.ruff:
         _add_ruff(version=settings.python_version)
     if _MODIFIED.get():
-        exit(1)
+        sys.exit(1)
 
 
 def _add_pre_commit() -> None:
@@ -272,19 +277,19 @@ def _add_pyrightconfig_include(
 
 
 def _add_pytest() -> None:
-    with _yield_pytest(""):
+    with _yield_pytest():
         ...
 
 
 def _add_pytest_asyncio() -> None:
-    with _yield_pytest("[pytest.filterwarnings]") as doc:
+    with _yield_pytest(desc="filterwarnings") as doc:
         pytest = _get_table(doc, "pytest")
         pytest["asyncio_default_fixture_loop_scope"] = "function"
         pytest["asyncio_mode"] = "auto"
 
 
 def _add_pytest_ignore_warnings() -> None:
-    with _yield_pytest("[pytest.asyncio_*]") as doc:
+    with _yield_pytest(desc="asyncio_*") as doc:
         pytest = _get_table(doc, "pytest")
         filterwarnings = _get_array(pytest, "filterwarnings")
         _ensure_in_array(
@@ -295,8 +300,15 @@ def _add_pytest_ignore_warnings() -> None:
         )
 
 
+def _add_pytest_test_paths(*paths: str) -> None:
+    with _yield_pytest(desc="testpaths") as doc:
+        pytest = _get_table(doc, "pytest")
+        testpaths = _get_array(pytest, "testpaths")
+        _ensure_in_array(testpaths, *paths)
+
+
 def _add_pytest_timeout(timeout: int, /) -> None:
-    with _yield_pytest("[pytest.timeout]") as doc:
+    with _yield_pytest(desc="timeout") as doc:
         pytest = _get_table(doc, "pytest")
         pytest["timeout"] = str(timeout)
 
@@ -484,7 +496,8 @@ def _run_pre_commit_update() -> None:
 
     def run() -> None:
         _ = check_call(["pre-commit", "autoupdate"])
-        _ = path.write_text(get_now().format_iso())
+        with writer(path, overwrite=True) as temp:
+            _ = temp.write_text(get_now().format_iso())
         _ = _MODIFIED.set(True)
 
     try:
@@ -569,7 +582,7 @@ def _yield_pyrightconfig(
 
 
 @contextmanager
-def _yield_pytest(desc: str, /) -> Iterator[TOMLDocument]:
+def _yield_pytest(*, desc: str | None = None) -> Iterator[TOMLDocument]:
     with _yield_toml_doc("pytest.toml", desc=desc) as doc:
         pytest = _get_table(doc, "pytest")
         addopts = _get_array(pytest, "addopts")
@@ -587,8 +600,6 @@ def _yield_pytest(desc: str, /) -> Iterator[TOMLDocument]:
         _ensure_in_array(filterwarnings, "error")
         pytest["minversion"] = "9.0"
         pytest["strict"] = True
-        testpaths = _get_array(pytest, "testpaths")
-        _ensure_in_array(testpaths, "src/tests")
         pytest["xfail_strict"] = True
         yield doc
 
@@ -677,29 +688,31 @@ def _yield_ruff(
 @contextmanager
 def _yield_write_context[T](
     path: PathLike,
-    reader: Callable[[str], T],
+    loads: Callable[[str], T],
     get_default: Callable[[], T],
-    writer: Callable[[T], str],
+    dumps: Callable[[T], str],
     /,
     *,
     desc: str | None = None,
 ) -> Iterator[T]:
     path = Path(path)
-    desc_use = "" if desc is None else f" {desc}"
+
+    def run(verb: str, data: T, /) -> None:
+        _LOGGER.info("%s '%s'%s...", verb, path, "" if desc is None else f" {desc}")
+        with writer(path, overwrite=True) as temp:
+            _ = temp.write_text(dumps(data))
+        _ = _MODIFIED.set(True)
+
     try:
-        data = reader(path.read_text())
+        data = loads(path.read_text())
     except FileNotFoundError:
         yield (default := get_default())
-        _LOGGER.info("Writing '%s'%s...", path, desc_use)
-        _ = path.write_text(writer(default))
-        _ = _MODIFIED.set(True)
+        run("Writing", default)
     else:
         yield data
-        current = reader(path.read_text())
+        current = loads(path.read_text())
         if data != current:
-            _LOGGER.info("Adding '%s'%s...", path, desc_use)
-            _ = path.write_text(writer(data))
-            _ = _MODIFIED.set(True)
+            run("Adding", data)
 
 
 @contextmanager

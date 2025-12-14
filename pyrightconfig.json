@@ -1,8 +1,10 @@
 {
   "deprecateTypingAliases": true,
   "enableReachabilityAnalysis": false,
-  "include": [],
-  "pythonVersion": "3.14",
+  "include": [
+    "script.py"
+  ],
+  "pythonVersion": "3.13",
   "reportCallInDefaultInitializer": true,
   "reportImplicitOverride": true,
   "reportImplicitStringConcatenation": true,

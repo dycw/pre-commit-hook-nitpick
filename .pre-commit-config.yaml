@@ -1,59 +1,78 @@
 repos:
-  # fixers
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.9
-    hooks:
-      - id: ruff-check
-        args: [--fix]
+  - hooks:
+      - args:
+          - --fix
+        id: ruff-check
       - id: ruff-format
-  - repo: https://github.com/astral-sh/uv-pre-commit
+    repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.9
+  - hooks:
+      - args:
+          - --script=script.py
+          - --upgrade
+        id: uv-lock
+    repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.9.17
-    hooks:
-      - id: uv-lock
-        args: [--script, script.py, --upgrade]
-  - repo: https://github.com/compwa/taplo-pre-commit
+  - hooks:
+      - args:
+          - --option
+          - indent_tables=true
+          - --option
+          - indent_entries=true
+          - --option
+          - reorder_keys=true
+        id: taplo-format
+    repo: https://github.com/compwa/taplo-pre-commit
     rev: v0.9.3
-    hooks:
-      - id: taplo-format
-        args:
-          [
-            --option,
-            indent_tables=true,
-            --option,
-            indent_entries=true,
-            --option,
-            reorder_keys=true,
-          ]
-  - repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: 0.1.18
-    hooks:
-      - id: nitpick
-  - repo: https://github.com/dycw/pre-commit-hooks
-    rev: 0.13.26
-    hooks:
+  - hooks:
+      - args:
+          - --python-version=3.13
+          - --pre-commit-prettier
+          - --pre-commit-ruff
+          - --pre-commit-taplo
+          - --pre-commit-uv
+          - --pyright
+          - --pyright-include=script.py
+          - --pytest
+          - --ruff
+        id: nitpick
+    repo: https://github.com/dycw/pre-commit-hook-nitpick
+    rev: 0.1.19
+  - hooks:
       - id: replace-sequence-str
-  - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.12.0-2
-    hooks:
-      - id: shfmt
-  # linters
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
-    hooks:
-      - id: shellcheck
-  # fixers/linters
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
+    repo: https://github.com/dycw/pre-commit-hooks
+    rev: 0.13.26
+  - hooks:
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: check-symlinks
       - id: destroyed-symlinks
       - id: detect-private-key
       - id: end-of-file-fixer
-      - id: mixed-line-ending
-        args: [--fix=lf]
+      - args:
+          - --fix=lf
+        id: mixed-line-ending
       - id: no-commit-to-branch
-      - id: pretty-format-json
-        args: [--autofix]
+      - args:
+          - --autofix
+        id: pretty-format-json
       - id: trailing-whitespace
+    repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+  - hooks:
+      - id: shfmt
+    repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.12.0-2
+  - hooks:
+      - id: shellcheck
+    repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+  - hooks:
+      - entry: npx prettier --write
+        id: prettier
+        language: system
+        name: prettier
+        types_or:
+          - markdown
+          - yaml
+    repo: local
