@@ -8,8 +8,8 @@ repos:
     rev: v0.14.9
   - hooks:
       - args:
-          - --script=script.py
           - --upgrade
+          - --script=script.py
         id: uv-lock
     repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.9.17
@@ -30,6 +30,7 @@ repos:
           - --pre-commit-ruff
           - --pre-commit-taplo
           - --pre-commit-uv
+          - --pre-commit-uv-script=script.py
           - --pyright
           - --pyright-include=script.py
           - --pytest
@@ -37,7 +38,7 @@ repos:
           - --ruff
         id: nitpick
     repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: 0.1.20
+    rev: 0.1.23
   - hooks:
       - id: replace-sequence-str
     repo: https://github.com/dycw/pre-commit-hooks
