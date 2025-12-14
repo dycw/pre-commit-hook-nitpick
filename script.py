@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from logging import getLogger
 from pathlib import Path
-from re import search
+from re import escape, search
 from subprocess import CalledProcessError, check_call, check_output
 from typing import TYPE_CHECKING, Any, Literal, assert_never
 
@@ -257,6 +257,7 @@ def _add_pre_commit_uv(*, script: str | None = None) -> None:
             dict_,
             "https://github.com/astral-sh/uv-pre-commit",
             "uv-lock",
+            files=None if script is None else rf"^{escape(script)}$",
             args=("add", ["--upgrade"] if script is None else [f"--script={script}"]),
         )
 
@@ -413,6 +414,7 @@ def _ensure_pre_commit_repo(
     name: str | None = None,
     entry: str | None = None,
     language: str | None = None,
+    files: str | None = None,
     types_or: list[str] | None = None,
     args: tuple[Literal["add", "exact"], list[str]] | None = None,
 ) -> None:
@@ -428,6 +430,8 @@ def _ensure_pre_commit_repo(
         hook_dict["entry"] = entry
     if language is not None:
         hook_dict["language"] = language
+    if files is not None:
+        hook_dict["files"] = files
     if types_or is not None:
         hook_dict["types_or"] = types_or
     if args is not None:
