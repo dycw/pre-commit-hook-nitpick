@@ -37,7 +37,8 @@ _LOGGER = getLogger(__name__)
 class Settings:
     pyproject__build_system: bool = False
     pyproject__dependency_groups: bool = False
-    pyproject__tool__uv__index: str | None = None
+    pyproject__project__name: str | None = None
+    pyproject__tool__uv__indexes: str | None = None
     dry_run: bool = False
 
 
@@ -52,8 +53,10 @@ def main(settings: Settings, /) -> None:
         _add_pyproject_build_system()
     if settings.pyproject__dependency_groups:
         _add_pyproject_dependency_groups()
-    if settings.pyproject__tool__uv__index is not None:
-        for index in settings.pyproject__tool__uv__index.split("|"):
+    if (name := settings.pyproject__project__name) is not None:
+        _add_pyproject_project_name(name)
+    if (indexes := settings.pyproject__tool__uv__indexes) is not None:
+        for index in indexes.split("|"):
             name, url = index.split(",")
             _add_pyproject_uv_index(name, url)
 
@@ -80,6 +83,14 @@ def _add_pyproject_dependency_groups(*, path: PathLike = "pyproject.toml") -> No
             dev.append(dycw)
         if (rich := "rich") not in dev:
             dev.append(rich)
+
+
+def _add_pyproject_project_name(
+    name: str, /, *, path: PathLike = "pyproject.toml"
+) -> None:
+    with _yield_pyproject("[project.name]", path=path) as doc:
+        proj = ensure_class(doc.setdefault("project", table()), Table)
+        _ = proj.setdefault("name", name)
 
 
 def _add_pyproject_uv_index(
