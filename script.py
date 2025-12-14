@@ -272,7 +272,7 @@ def _yield_ruff(
     bugbear["ban-relative-imports"] = "all"
     isort = _get_table(lint, "isort")
     req_imps = _get_array(isort, "required-imports")
-    _ensure_in_array(req_imps, "from __future__ imoprt annotations")
+    _ensure_in_array(req_imps, "from __future__ import annotations")
     isort["split-on-trailing-comma"] = False
     yield doc
     if doc != _get_doc(_RUFF_TOML):
