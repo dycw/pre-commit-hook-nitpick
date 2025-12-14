@@ -25,7 +25,7 @@ repos:
             reorder_keys=true,
           ]
   - repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: 0.13.26
+    rev: 0.1.13
     hooks:
       - id: nitpick
   - repo: https://github.com/dycw/pre-commit-hooks
@@ -37,10 +37,6 @@ repos:
     hooks:
       - id: shfmt
   # linters
-  # - repo: https://github.com/andreoliwa/nitpick
-  #   rev: v0.38.1
-  #   hooks:
-  #     - id: nitpick-check
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:
