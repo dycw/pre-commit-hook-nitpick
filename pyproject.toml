@@ -1,7 +1,7 @@
 [tool]
   [tool.bumpversion]
     allow_dirty = true
-    current_version = "0.1.5"
+    current_version = "0.1.6"
 
   [tool.nitpick]
     style = [
@@ -113,3 +113,15 @@
       [tool.ruff.lint.isort]
         required-imports = ["from __future__ import annotations"]
         split-on-trailing-comma = false
+
+  [[tool.uv.index]]
+    explicit = true
+    name = "qwer"
+    url = "1234"
+
+[build-system]
+  build-backend = "uv_build"
+  requires = ["uv_build"]
+
+[project]
+  requires-python = ">= 3.14"
