@@ -74,6 +74,9 @@ class Settings:
     pre_commit_uv: bool = option(
         default=False, help="Set up '.pre-commit-config.yaml' uv"
     )
+    pre_commit_uv_script: str | None = option(
+        default=None, help="Set up '.pre-commit-config.yaml' uv lock script"
+    )
     pyproject: bool = option(default=False, help="Set up 'pyproject.toml'")
     pyproject__dependency_groups__dev: bool = option(
         default=False, help="Set up 'pyproject.toml' [dependency-groups.dev]"
@@ -131,7 +134,7 @@ def main(settings: Settings, /) -> None:
     if settings.pre_commit_taplo:
         _add_pre_commit_taplo()
     if settings.pre_commit_uv:
-        _add_pre_commit_uv()
+        _add_pre_commit_uv(script=settings.pre_commit_uv_script)
     if settings.pyproject:
         _add_pyproject(version=settings.python_version)
     if settings.pyproject__dependency_groups__dev:
@@ -248,13 +251,13 @@ def _add_pre_commit_taplo() -> None:
         )
 
 
-def _add_pre_commit_uv() -> None:
+def _add_pre_commit_uv(*, script: str | None = None) -> None:
     with _yield_pre_commit(desc="uv") as dict_:
         _ensure_pre_commit_repo(
             dict_,
             "https://github.com/astral-sh/uv-pre-commit",
             "uv-lock",
-            args=("add", ["--upgrade"]),
+            args=("add", ["--upgrade"] if script is None else [f"--script={script}"]),
         )
 
 
