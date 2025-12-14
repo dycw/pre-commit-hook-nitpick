@@ -11,13 +11,16 @@
 # ///
 from __future__ import annotations
 
+import json
 from contextlib import contextmanager
 from logging import getLogger
 from pathlib import Path
+from sys import version
 from typing import TYPE_CHECKING, Any
 
+import tomlkit
 from click import command
-from tomlkit import TOMLDocument, aot, array, document, dumps, parse, table
+from tomlkit import TOMLDocument, aot, array, document, table
 from tomlkit.items import AoT, Array, Table
 from typed_settings import click_options, option, settings
 from utilities.click import CONTEXT_SETTINGS_HELP_OPTION_NAMES
@@ -50,6 +53,10 @@ class Settings:
     )
     pyproject__tool__uv__indexes: str | None = option(
         default=None, help="Set up 'pyproject.toml' [[uv.tool.index]]"
+    )
+    pyright: bool = option(default=False, help="Set up 'pyrightconfig.json'")
+    pyright_include: list[str] | None = option(
+        default=None, help="Set up 'pyrightconfig.json' [include]"
     )
     pytest: bool = option(default=False, help="Set up 'pytest.toml'")
     pytest_asyncio: bool = option(
@@ -87,6 +94,11 @@ def main(settings: Settings, /) -> None:
         for index in indexes.split("|"):
             name, url = index.split(",")
             _add_pyproject_uv_index(name, url, version=settings.version)
+    if settings.pyright:
+        _add_pyrightconfig(version=settings.version)
+    if (include := settings.pyright_include) is not None:
+        assert 0, include
+        _add_pyrightconfig_include(include, version=version)
     if settings.pytest:
         _add_pytest()
     if settings.pytest_asyncio:
@@ -100,12 +112,17 @@ def main(settings: Settings, /) -> None:
 
 
 def _add_pyproject(*, version: str = _SETTINGS.version) -> None:
-    with _yield_pyproject("[]", version=version):
+    with _yield_pyproject("", version=version):
+        ...
+
+
+def _add_pyrightconfig(*, version: str = _SETTINGS.version) -> None:
+    with _yield_pyrightconfig("", version=version):
         ...
 
 
 def _add_pytest() -> None:
-    with _yield_pytest("[]"):
+    with _yield_pytest(""):
         ...
 
 
@@ -211,9 +228,16 @@ def _get_array(obj: Container | Table, key: str, /) -> Array:
     return ensure_class(obj.setdefault(key, array()), Array)
 
 
-def _get_doc(path: PathLike, /) -> TOMLDocument:
+def _get_json_dict(path: PathLike, /) -> dict[str, Any]:
     try:
-        return parse(Path(path).read_text())
+        return json.loads(Path(path).read_text())
+    except FileNotFoundError:
+        return {}
+
+
+def _get_toml_doc(path: PathLike, /) -> TOMLDocument:
+    try:
+        return tomlkit.parse(Path(path).read_text())
     except FileNotFoundError:
         return document()
 
@@ -223,13 +247,23 @@ def _get_table(obj: Container | Table, key: str, /) -> Table:
 
 
 @contextmanager
+def _yield_json_dict(path: PathLike, desc: str, /) -> Iterator[dict[str, Any]]:
+    path = Path(path)
+    dict_ = _get_json_dict(path)
+    yield dict_
+    if dict_ != _get_json_dict(path):
+        _LOGGER.info("Adding '%s' %s...", path, desc)
+        _ = path.write_text(json.dumps(dict_))
+
+
+@contextmanager
 def _yield_toml_doc(path: PathLike, desc: str, /) -> Iterator[TOMLDocument]:
     path = Path(path)
-    doc = _get_doc(path)
+    doc = _get_toml_doc(path)
     yield doc
-    if doc != _get_doc(path):
+    if doc != _get_toml_doc(path):
         _LOGGER.info("Adding '%s' %s...", path, desc)
-        _ = path.write_text(dumps(doc))
+        _ = path.write_text(tomlkit.dumps(doc))
 
 
 @contextmanager
@@ -243,6 +277,41 @@ def _yield_pyproject(
         project = _get_table(doc, "project")
         project["requires-python"] = f">= {version}"
         yield doc
+
+
+@contextmanager
+def _yield_pyrightconfig(
+    desc: str, /, *, version: str = _SETTINGS.version
+) -> Iterator[TOMLDocument]:
+    with _yield_json_dict("pyrightconfig.json", desc) as dict_:
+        dict_["deprecateTypingAliases"] = True
+        dict_["enableReachabilityAnalysis"] = False
+        # "include": [
+        # "src"
+        # ],
+        dict_["pythonVersion"] = version
+        dict_["reportCallInDefaultInitializer"] = True
+        dict_["reportImplicitOverride"] = True
+        dict_["reportImplicitStringConcatenation"] = True
+        dict_["reportImportCycles"] = True
+        dict_["reportMissingSuperCall"] = True
+        dict_["reportMissingTypeArgument"] = False
+        dict_["reportMissingTypeStubs"] = False
+        dict_["reportPrivateImportUsage"] = False
+        dict_["reportPrivateUsage"] = False
+        dict_["reportPropertyTypeMismatch"] = True
+        dict_["reportUninitializedInstanceVariable"] = True
+        dict_["reportUnknownArgumentType"] = False
+        dict_["reportUnknownMemberType"] = False
+        dict_["reportUnknownParameterType"] = False
+        dict_["reportUnknownVariableType"] = False
+        dict_["reportUnnecessaryComparison"] = False
+        dict_["reportUnnecessaryTypeIgnoreComment"] = True
+        dict_["reportUnusedCallResult"] = True
+        dict_["reportUnusedImport"] = False
+        dict_["reportUnusedVariable"] = False
+        dict_["typeCheckingMode"] = "strict"
+        yield dict_
 
 
 @contextmanager
