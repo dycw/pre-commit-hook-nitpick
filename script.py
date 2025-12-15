@@ -186,9 +186,34 @@ def main(settings: Settings, /) -> None:
         sys.exit(1)
 
 
-def _add_github_push_tag() -> None:
-    with _yield_push_tag():
-        ...
+def _add_github_push_tag(
+    *, major_minor: bool = False, major: bool = False, latest: bool = False
+) -> None:
+    with _yield_yaml_dict(".github/workflows/push--tag.yaml") as push_tag_dict:
+        push_tag_dict["name"] = "push"
+        on = _get_dict(push_tag_dict, "on")
+        push = _get_dict(on, "push")
+        branches = _get_list(push, "branches")
+        _ensure_in_array(branches, "master")
+        jobs = _get_dict(push_tag_dict, "jobs")
+        tag = _get_dict(jobs, "tag")
+        tag["runs-on"] = "ubuntu-latest"
+        steps = _get_list(tag, "steps")
+        step_dict = _ensure_partial_dict_in_array(
+            steps,
+            {
+                "name": "Tag latest commit",
+                "uses": "dycw/action-tag-commit@latest",
+                "with": {"token": "${{ secrets.GITHUB_TOKEN }}"},
+            },
+        )
+        with_ = _get_dict(step_dict, "with")
+        if major_minor:
+            with_["major.minor"] = True
+        if major:
+            with_["major"] = True
+        if latest:
+            with_["latest"] = True
 
 
 def _add_pre_commit() -> None:
@@ -468,24 +493,6 @@ def _ensure_pre_commit_repo(
                 assert_never(never)
 
 
-def _write_text_file(path: PathLike, text: str, /, *, desc: str | None = None) -> None:
-    path = Path(path)
-
-    def run(verb: str, /) -> None:
-        _LOGGER.info("%s '%s'%s...", verb, path, "" if desc is None else f" {desc}")
-        with writer(path, overwrite=True) as temp:
-            _ = temp.write_text(text)
-        _ = _MODIFIED.set(True)
-
-    try:
-        current = path.read_text()
-    except FileNotFoundError:
-        run("Writing")
-    else:
-        if text != current:
-            run("Adding")
-
-
 def _get_aot(obj: Container | Table, key: str, /) -> AoT:
     return ensure_class(obj.setdefault(key, aot()), AoT)
 
@@ -586,31 +593,6 @@ def _yield_json_dict(
 def _yield_pre_commit(*, desc: str | None = None) -> Iterator[dict[str, Any]]:
     with _yield_yaml_dict(".pre-commit-config.yaml", desc=desc) as dict_:
         yield dict_
-
-
-@contextmanager
-def _yield_push_tag(*, desc: str | None = None) -> Iterator[TOMLDocument]:
-    with _yield_yaml_dict(
-        ".github/workflows/push--tag.yaml", desc=desc
-    ) as push_tag_dict:
-        push_tag_dict["name"] = "push"
-        on = _get_dict(push_tag_dict, "on")
-        push = _get_dict(on, "push")
-        branches = _get_list(push, "branches")
-        _ensure_in_array(branches, "master")
-        jobs = _get_dict(push_tag_dict, "jobs")
-        tag = _get_dict(jobs, "tag")
-        tag["runs-on"] = "ubuntu-latest"
-        steps = _get_list(tag, "steps")
-        step_dict = _ensure_partial_dict_in_array(
-            steps,
-            {
-                "name": "Tag latest commit",
-                "uses": "dycw/action-tag-commit@latest",
-                "with": {"token": "${{ secrets.GITHUB_TOKEN }}"},
-            },
-        )
-        _get_dict(step_dict, "with")
 
 
 @contextmanager
