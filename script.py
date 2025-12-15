@@ -42,7 +42,7 @@ from whenever import ZonedDateTime
 from xdg_base_dirs import xdg_cache_home
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
 
     from tomlkit.container import Container
     from utilities.types import PathLike
@@ -496,10 +496,10 @@ def _get_or_add_table(container: HasSetDefault, key: str, /) -> Table:
     return ensure_class(container.setdefault(key, table()), Table)
 
 
-def _get_partial_dict(array: list[Any], dict_: StrDict, /) -> StrDict:
+def _get_partial_dict(container: Iterable[Any], dict_: StrDict, /) -> StrDict:
     return one(
         d
-        for d in array
+        for d in container
         if isinstance(d, dict)
         and set(dict_).issubset(d)
         and all(d[k] == v for k, v in dict_.items())
