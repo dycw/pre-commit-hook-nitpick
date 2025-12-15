@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from utilities.types import PathLike
 
 
+type StrDict = dict[str, Any]
 _LOGGER = getLogger(__name__)
 _MODIFIED = ContextVar("modified", default=False)
 
@@ -189,31 +190,8 @@ def main(settings: Settings, /) -> None:
 def _add_github_push_tag(
     *, major_minor: bool = False, major: bool = False, latest: bool = False
 ) -> None:
-    with _yield_yaml_dict(".github/workflows/push--tag.yaml") as push_tag_dict:
-        push_tag_dict["name"] = "push"
-        on = _get_dict(push_tag_dict, "on")
-        push = _get_dict(on, "push")
-        branches = _get_list(push, "branches")
-        _ensure_in_array(branches, "master")
-        jobs = _get_dict(push_tag_dict, "jobs")
-        tag = _get_dict(jobs, "tag")
-        tag["runs-on"] = "ubuntu-latest"
-        steps = _get_list(tag, "steps")
-        step_dict = _ensure_partial_dict_in_array(
-            steps,
-            {
-                "name": "Tag latest commit",
-                "uses": "dycw/action-tag-commit@latest",
-                "with": {"token": "${{ secrets.GITHUB_TOKEN }}"},
-            },
-        )
-        with_ = _get_dict(step_dict, "with")
-        if major_minor:
-            with_["major.minor"] = True
-        if major:
-            with_["major"] = True
-        if latest:
-            with_["latest"] = True
+    with _yield_push_tag(major_minor=major_minor, major=major, latest=latest):
+        ...
 
 
 def _add_pre_commit() -> None:
@@ -437,8 +415,8 @@ def _ensure_not_in_array(array: Array, /, *objs: Any) -> None:
 
 
 def _ensure_partial_dict_in_array(
-    array: list[Any], partial: dict[str, Any], /, *, extra: dict[str, Any] | None = None
-) -> dict[str, Any]:
+    array: list[Any], partial: StrDict, /, *, extra: StrDict | None = None
+) -> StrDict:
     try:
         return one(
             d
@@ -454,7 +432,7 @@ def _ensure_partial_dict_in_array(
 
 
 def _ensure_pre_commit_repo(
-    pre_commit_dict: dict[str, Any],
+    pre_commit_dict: StrDict,
     url: str,
     id_: str,
     /,
@@ -493,6 +471,24 @@ def _ensure_pre_commit_repo(
                 assert_never(never)
 
 
+def _write_text_file(path: PathLike, text: str, /, *, desc: str | None = None) -> None:
+    path = Path(path)
+
+    def run(verb: str, /) -> None:
+        _LOGGER.info("%s '%s'%s...", verb, path, "" if desc is None else f" {desc}")
+        with writer(path, overwrite=True) as temp:
+            _ = temp.write_text(text)
+        _ = _MODIFIED.set(True)
+
+    try:
+        current = path.read_text()
+    except FileNotFoundError:
+        run("Writing")
+    else:
+        if text != current:
+            run("Adding")
+
+
 def _get_aot(obj: Container | Table, key: str, /) -> AoT:
     return ensure_class(obj.setdefault(key, aot()), AoT)
 
@@ -501,11 +497,11 @@ def _get_array(obj: Container | Table, key: str, /) -> Array:
     return ensure_class(obj.setdefault(key, array()), Array)
 
 
-def _get_dict(obj: dict[str, Any], key: str, /) -> dict[str, Any]:
+def _get_dict(obj: StrDict, key: str, /) -> StrDict:
     return ensure_class(obj.setdefault(key, {}), dict)
 
 
-def _get_list(obj: dict[str, Any], key: str, /) -> list[Any]:
+def _get_list(obj: StrDict, key: str, /) -> list[Any]:
     return ensure_class(obj.setdefault(key, []), list)
 
 
@@ -584,15 +580,53 @@ def _yield_bump_my_version(
 @contextmanager
 def _yield_json_dict(
     path: PathLike, /, *, desc: str | None = None
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[StrDict]:
     with _yield_write_context(path, json.loads, dict, json.dumps, desc=desc) as dict_:
         yield dict_
 
 
 @contextmanager
-def _yield_pre_commit(*, desc: str | None = None) -> Iterator[dict[str, Any]]:
+def _yield_pre_commit(*, desc: str | None = None) -> Iterator[StrDict]:
     with _yield_yaml_dict(".pre-commit-config.yaml", desc=desc) as dict_:
         yield dict_
+
+
+@contextmanager
+def _yield_push_tag(
+    *,
+    desc: str | None = None,
+    major_minor: bool = False,
+    major: bool = False,
+    latest: bool = False,
+) -> Iterator[StrDict]:
+    with _yield_yaml_dict(
+        ".github/workflows/push--tag.yaml", desc=desc
+    ) as push_tag_dict:
+        push_tag_dict["name"] = "push"
+        on = _get_dict(push_tag_dict, "on")
+        push = _get_dict(on, "push")
+        branches = _get_list(push, "branches")
+        _ensure_in_array(branches, "master")
+        jobs = _get_dict(push_tag_dict, "jobs")
+        tag = _get_dict(jobs, "tag")
+        tag["runs-on"] = "ubuntu-latest"
+        steps = _get_list(tag, "steps")
+        step_dict = _ensure_partial_dict_in_array(
+            steps,
+            {
+                "name": "Tag latest commit",
+                "uses": "dycw/action-tag-commit@latest",
+                "with": {"token": "${{ secrets.GITHUB_TOKEN }}"},
+            },
+        )
+        with_ = _get_dict(step_dict, "with")
+        if major_minor:
+            with_["major.minor"] = True
+        if major:
+            with_["major"] = True
+        if latest:
+            with_["latest"] = True
+        yield push_tag_dict
 
 
 @contextmanager
@@ -611,7 +645,7 @@ def _yield_pyproject(
 @contextmanager
 def _yield_pyrightconfig(
     *, desc: str | None = None, version: str = _SETTINGS.python_version
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[StrDict]:
     with _yield_json_dict("pyrightconfig.json", desc=desc) as dict_:
         dict_["deprecateTypingAliases"] = True
         dict_["enableReachabilityAnalysis"] = False
@@ -777,7 +811,7 @@ def _yield_write_context[T](
 @contextmanager
 def _yield_yaml_dict(
     path: PathLike, /, *, desc: str | None = None
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[StrDict]:
     with _yield_write_context(
         path, yaml.safe_load, document, yaml.safe_dump, desc=desc
     ) as dict_:
