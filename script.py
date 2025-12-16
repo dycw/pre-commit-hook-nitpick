@@ -42,22 +42,31 @@ from whenever import ZonedDateTime
 from xdg_base_dirs import xdg_cache_home
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
 
     from tomlkit.container import Container
     from utilities.types import PathLike
 
 
+type HasAppend = Array | list[Any]
+type HasSetDefault = Container | StrDict | Table
+type StrDict = dict[str, Any]
 _LOGGER = getLogger(__name__)
-_CONFIGS = Path(__file__).parent / "configs"
 _MODIFIED = ContextVar("modified", default=False)
 
 
 @settings
 class Settings:
     code_version: str = option(default="0.1.0", help="Code version")
-    github__push_tag: bool = option(
-        default=False, help="Set up '.github/workflows/push--tag.yaml'"
+    github__push_tag: bool = option(default=False, help="Set up 'push--tag.yaml'")
+    github__push_tag__major_minor: bool = option(
+        default=False, help="Set up 'push--tag.yaml' with the 'major.minor' tag"
+    )
+    github__push_tag__major: bool = option(
+        default=False, help="Set up 'push--tag.yaml' with the the 'major' tag"
+    )
+    github__push_tag__latest: bool = option(
+        default=False, help="Set up 'push--tag.yaml' with the 'latest' tag"
     )
     python_version: str = option(default="3.14", help="Python version")
     pre_commit__dockerfmt: bool = option(
@@ -129,6 +138,12 @@ def main(settings: Settings, /) -> None:
     _add_pre_commit()
     if settings.github__push_tag:
         _add_github_push_tag()
+    if settings.github__push_tag__major_minor:
+        _add_github_push_tag_extra("major-minor")
+    if settings.github__push_tag__major:
+        _add_github_push_tag_extra("major")
+    if settings.github__push_tag__latest:
+        _add_github_push_tag_extra("latest")
     if settings.pre_commit__dockerfmt:
         _add_pre_commit_dockerfmt()
     if settings.pre_commit__prettier:
@@ -175,9 +190,18 @@ def main(settings: Settings, /) -> None:
 
 
 def _add_github_push_tag() -> None:
-    src = _CONFIGS / "push--tag.yaml"
-    dest = Path(".github/workflows") / src.name
-    _write_text_file(dest, src.read_text())
+    with _yield_github_push_tag():
+        ...
+
+
+def _add_github_push_tag_extra(key: str, /) -> None:
+    with _yield_github_push_tag() as push_tag_dict:
+        jobs = _get_dict(push_tag_dict, "jobs")
+        tag = _get_dict(jobs, "tag")
+        steps = _get_list(tag, "steps")
+        step_dict = _get_partial_dict(steps, {"name": "Tag latest commit"})
+        with_ = _get_dict(step_dict, "with")
+        with_[key] = True
 
 
 def _add_pre_commit() -> None:
@@ -289,7 +313,7 @@ def _add_pyrightconfig_include(
 ) -> None:
     with _yield_pyrightconfig(version=version) as dict_:
         include = _get_list(dict_, "include")
-        _ensure_in_array(include, *paths)
+        _ensure_contains(include, *paths)
 
 
 def _add_pytest() -> None:
@@ -308,7 +332,7 @@ def _add_pytest_ignore_warnings() -> None:
     with _yield_pytest(desc="asyncio_*") as doc:
         pytest = _get_table(doc, "pytest")
         filterwarnings = _get_array(pytest, "filterwarnings")
-        _ensure_in_array(
+        _ensure_contains(
             filterwarnings,
             "ignore::DeprecationWarning",
             "ignore::ResourceWarning",
@@ -320,7 +344,7 @@ def _add_pytest_test_paths(*paths: str) -> None:
     with _yield_pytest(desc="testpaths") as doc:
         pytest = _get_table(doc, "pytest")
         testpaths = _get_array(pytest, "testpaths")
-        _ensure_in_array(testpaths, *paths)
+        _ensure_contains(testpaths, *paths)
 
 
 def _add_pytest_timeout(timeout: int, /) -> None:
@@ -340,8 +364,8 @@ def _add_pyproject_dependency_groups_dev(
     with _yield_pyproject(desc="[dependency-groups.dev]", version=version) as doc:
         dep_grps = _get_table(doc, "dependency-groups")
         dev = _get_array(dep_grps, "dev")
-        _ensure_in_array(dev, "dycw-utilities[test]")
-        _ensure_in_array(dev, "rich")
+        _ensure_contains(dev, "dycw-utilities[test]")
+        _ensure_contains(dev, "rich")
 
 
 def _add_pyproject_project_name(
@@ -361,7 +385,7 @@ def _add_pyproject_project_optional_dependencies_scripts(
         proj = _get_table(doc, "project")
         opt_deps = _get_table(proj, "optional-dependencies")
         scripts = _get_array(opt_deps, "scripts")
-        _ensure_in_array(scripts, "click >=8.3.1")
+        _ensure_contains(scripts, "click >=8.3.1")
 
 
 def _add_pyproject_uv_index(
@@ -375,22 +399,36 @@ def _add_pyproject_uv_index(
         index["explicit"] = True
         index["name"] = name
         index["url"] = url
-        _ensure_in_aot(indexes, index)
+        _ensure_aot_contains(indexes, index)
 
 
-def _ensure_in_aot(array: AoT, /, *tables: Table) -> None:
+def _ensure_aot_contains(array: AoT, /, *tables: Table) -> None:
     for table_ in tables:
         if table_ not in array:
             array.append(table_)
 
 
-def _ensure_in_array(array: Array | list[Any], /, *objs: Any) -> None:
+def _ensure_contains(array: HasAppend, /, *objs: Any) -> None:
+    if isinstance(array, AoT):
+        msg = f"Use {_ensure_aot_contains.__name__!r} instead of {_ensure_contains.__name__!r}"
+        raise TypeError(msg)
     for obj in objs:
         if obj not in array:
             array.append(obj)
 
 
-def _ensure_not_in_array(array: Array, /, *objs: Any) -> None:
+def _ensure_contains_partial(
+    array: HasAppend, partial: StrDict, /, *, extra: StrDict | None = None
+) -> StrDict:
+    try:
+        return _get_partial_dict(array, partial)
+    except OneEmptyError:
+        dict_ = partial | ({} if extra is None else extra)
+        array.append(dict_)
+        return dict_
+
+
+def _ensure_not_contains(array: Array, /, *objs: Any) -> None:
     for obj in objs:
         try:
             index = next(i for i, o in enumerate(array) if o == obj)
@@ -400,25 +438,8 @@ def _ensure_not_in_array(array: Array, /, *objs: Any) -> None:
             del array[index]
 
 
-def _ensure_partial_dict_in_array(
-    array: list[Any], partial: dict[str, Any], /, *, extra: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    try:
-        return one(
-            d
-            for d in array
-            if isinstance(d, dict)
-            and set(partial).issubset(d)
-            and all(d[k] == v for k, v in partial.items())
-        )
-    except OneEmptyError:
-        dict_ = partial | ({} if extra is None else extra)
-        array.append(dict_)
-        return dict_
-
-
 def _ensure_pre_commit_repo(
-    pre_commit_dict: dict[str, Any],
+    pre_commit_dict: StrDict,
     url: str,
     id_: str,
     /,
@@ -431,11 +452,11 @@ def _ensure_pre_commit_repo(
     args: tuple[Literal["add", "exact"], list[str]] | None = None,
 ) -> None:
     repos_list = _get_list(pre_commit_dict, "repos")
-    repo_dict = _ensure_partial_dict_in_array(
+    repo_dict = _ensure_contains_partial(
         repos_list, {"repo": url}, extra={} if url == "local" else {"rev": "master"}
     )
     hooks_list = _get_list(repo_dict, "hooks")
-    hook_dict = _ensure_partial_dict_in_array(hooks_list, {"id": id_})
+    hook_dict = _ensure_contains_partial(hooks_list, {"id": id_})
     if name is not None:
         hook_dict["name"] = name
     if entry is not None:
@@ -450,37 +471,41 @@ def _ensure_pre_commit_repo(
         match args:
             case "add", list() as args_i:
                 hook_args = _get_list(hook_dict, "args")
-                _ensure_in_array(hook_args, *args_i)
+                _ensure_contains(hook_args, *args_i)
             case "exact", list() as args_i:
                 hook_dict["args"] = args_i
             case never:
                 assert_never(never)
 
 
-def _write_text_file(path: PathLike, text: str, /, *, desc: str | None = None) -> None:
-    path = Path(path)
-
-    def run(verb: str, /) -> None:
-        _LOGGER.info("%s '%s'%s...", verb, path, "" if desc is None else f" {desc}")
-        with writer(path, overwrite=True) as temp:
-            _ = temp.write_text(text)
-        _ = _MODIFIED.set(True)
-
-    try:
-        current = path.read_text()
-    except FileNotFoundError:
-        run("Writing")
-    else:
-        if text != current:
-            run("Adding")
+def _get_aot(container: HasSetDefault, key: str, /) -> AoT:
+    return ensure_class(container.setdefault(key, aot()), AoT)
 
 
-def _get_aot(obj: Container | Table, key: str, /) -> AoT:
-    return ensure_class(obj.setdefault(key, aot()), AoT)
+def _get_array(container: HasSetDefault, key: str, /) -> Array:
+    return ensure_class(container.setdefault(key, array()), Array)
 
 
-def _get_array(obj: Container | Table, key: str, /) -> Array:
-    return ensure_class(obj.setdefault(key, array()), Array)
+def _get_dict(container: HasSetDefault, key: str, /) -> StrDict:
+    return ensure_class(container.setdefault(key, {}), dict)
+
+
+def _get_list(containe: HasSetDefault, key: str, /) -> list[Any]:
+    return ensure_class(containe.setdefault(key, []), list)
+
+
+def _get_partial_dict(container: Iterable[Any], dict_: StrDict, /) -> StrDict:
+    return one(
+        d
+        for d in container
+        if isinstance(d, dict)
+        and set(dict_).issubset(d)
+        and all(d[k] == v for k, v in dict_.items())
+    )
+
+
+def _get_table(container: HasSetDefault, key: str, /) -> Table:
+    return ensure_class(container.setdefault(key, table()), Table)
 
 
 def _get_version(obj: TOMLDocument | str, /) -> Version:
@@ -493,14 +518,6 @@ def _get_version(obj: TOMLDocument | str, /) -> Version:
             return _get_version(tomlkit.parse(text))
         case never:
             assert_never(never)
-
-
-def _get_list(obj: dict[str, Any], key: str, /) -> list[Any]:
-    return ensure_class(obj.setdefault(key, []), list)
-
-
-def _get_table(obj: Container | Table, key: str, /) -> Table:
-    return ensure_class(obj.setdefault(key, table()), Table)
 
 
 def _run_bump_my_version(*, version: VersionLike = _SETTINGS.code_version) -> None:
@@ -560,15 +577,40 @@ def _yield_bump_my_version(
 
 
 @contextmanager
+def _yield_github_push_tag(*, desc: str | None = None) -> Iterator[StrDict]:
+    with _yield_yaml_dict(
+        ".github/workflows/push--tag.yaml", desc=desc
+    ) as push_tag_dict:
+        push_tag_dict["name"] = "push"
+        on = _get_dict(push_tag_dict, "on")
+        push = _get_dict(on, "push")
+        branches = _get_list(push, "branches")
+        _ensure_contains(branches, "master")
+        jobs = _get_dict(push_tag_dict, "jobs")
+        tag = _get_dict(jobs, "tag")
+        tag["runs-on"] = "ubuntu-latest"
+        steps = _get_list(tag, "steps")
+        _ = _ensure_contains_partial(
+            steps,
+            {
+                "name": "Tag latest commit",
+                "uses": "dycw/action-tag-commit@latest",
+                "with": {"token": "${{ secrets.GITHUB_TOKEN }}"},
+            },
+        )
+        yield push_tag_dict
+
+
+@contextmanager
 def _yield_json_dict(
     path: PathLike, /, *, desc: str | None = None
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[StrDict]:
     with _yield_write_context(path, json.loads, dict, json.dumps, desc=desc) as dict_:
         yield dict_
 
 
 @contextmanager
-def _yield_pre_commit(*, desc: str | None = None) -> Iterator[dict[str, Any]]:
+def _yield_pre_commit(*, desc: str | None = None) -> Iterator[StrDict]:
     with _yield_yaml_dict(".pre-commit-config.yaml", desc=desc) as dict_:
         yield dict_
 
@@ -589,7 +631,7 @@ def _yield_pyproject(
 @contextmanager
 def _yield_pyrightconfig(
     *, desc: str | None = None, version: str = _SETTINGS.python_version
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[StrDict]:
     with _yield_json_dict("pyrightconfig.json", desc=desc) as dict_:
         dict_["deprecateTypingAliases"] = True
         dict_["enableReachabilityAnalysis"] = False
@@ -623,7 +665,7 @@ def _yield_pytest(*, desc: str | None = None) -> Iterator[TOMLDocument]:
     with _yield_toml_doc("pytest.toml", desc=desc) as doc:
         pytest = _get_table(doc, "pytest")
         addopts = _get_array(pytest, "addopts")
-        _ensure_in_array(
+        _ensure_contains(
             addopts,
             "-ra",
             "-vv",
@@ -634,7 +676,7 @@ def _yield_pytest(*, desc: str | None = None) -> Iterator[TOMLDocument]:
         pytest["collect_imported_tests"] = False
         pytest["empty_parameter_set_mark"] = "fail_at_collect"
         filterwarnings = _get_array(pytest, "filterwarnings")
-        _ensure_in_array(filterwarnings, "error")
+        _ensure_contains(filterwarnings, "error")
         pytest["minversion"] = "9.0"
         pytest["strict"] = True
         pytest["xfail_strict"] = True
@@ -654,9 +696,9 @@ def _yield_ruff(
         lint = _get_table(doc, "lint")
         lint["explicit-preview-rules"] = True
         fixable = _get_array(lint, "fixable")
-        _ensure_in_array(fixable, "ALL")
+        _ensure_contains(fixable, "ALL")
         ignore = _get_array(lint, "ignore")
-        _ensure_in_array(
+        _ensure_contains(
             ignore,
             "ANN401",  # any-type
             "ASYNC109",  # async-function-with-timeout
@@ -701,23 +743,23 @@ def _yield_ruff(
             "RUF022",  # unsorted-dunder-all
             "RUF029",  # unused-async
         ]
-        _ensure_in_array(select, "ALL", *selected_rules)
+        _ensure_contains(select, "ALL", *selected_rules)
         extend_per_file_ignores = _get_table(lint, "extend-per-file-ignores")
         test_py = _get_array(extend_per_file_ignores, "test_*.py")
         test_py_rules = [
             "S101",  # assert
             "SLF001",  # private-member-access
         ]
-        _ensure_in_array(test_py, *test_py_rules)
-        _ensure_not_in_array(ignore, *selected_rules, *test_py_rules)
+        _ensure_contains(test_py, *test_py_rules)
+        _ensure_not_contains(ignore, *selected_rules, *test_py_rules)
         bugbear = _get_table(lint, "flake8-bugbear")
         extend_immutable_calls = _get_array(bugbear, "extend-immutable-calls")
-        _ensure_in_array(extend_immutable_calls, "typing.cast")
+        _ensure_contains(extend_immutable_calls, "typing.cast")
         tidy_imports = _get_table(lint, "flake8-tidy-imports")
         tidy_imports["ban-relative-imports"] = "all"
         isort = _get_table(lint, "isort")
         req_imps = _get_array(isort, "required-imports")
-        _ensure_in_array(req_imps, "from __future__ import annotations")
+        _ensure_contains(req_imps, "from __future__ import annotations")
         isort["split-on-trailing-comma"] = False
         yield doc
 
@@ -749,15 +791,15 @@ def _yield_write_context[T](
         yield data
         current = loads(path.read_text())
         if data != current:
-            run("Adding", data)
+            run("Modifying", data)
 
 
 @contextmanager
 def _yield_yaml_dict(
     path: PathLike, /, *, desc: str | None = None
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[StrDict]:
     with _yield_write_context(
-        path, yaml.safe_load, document, yaml.safe_dump, desc=desc
+        path, yaml.safe_load, dict, yaml.safe_dump, desc=desc
     ) as dict_:
         yield dict_
 
