@@ -689,10 +689,8 @@ def _yield_github_push(*, desc: str | None = None) -> Iterator[StrDict]:
 
 
 @contextmanager
-def _yield_json_dict(
-    path: PathLike, /, *, desc: str | None = None
-) -> Iterator[StrDict]:
-    with _yield_write_context(path, json.loads, dict, json.dumps, desc=desc) as dict_:
+def _yield_json_dict(path: PathLike, /) -> Iterator[StrDict]:
+    with _yield_write_context(path, json.loads, dict, json.dumps) as dict_:
         yield dict_
 
 
