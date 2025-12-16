@@ -60,7 +60,7 @@ _MODIFIED = ContextVar("modified", default=False)
 @settings
 class Settings:
     code_version: str = option(default="0.1.0", help="Code version")
-    coverage: bool = option(default=False, help="Set up '.coveragerc.toml'")
+    coverage: bool = option(default=True, help="Set up '.coveragerc.toml'")  # TODO
     github__push__publish: bool = option(
         default=False, help="Set up 'push.yaml' publishing"
     )
