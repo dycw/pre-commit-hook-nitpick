@@ -236,6 +236,7 @@ def _add_github_push_tag() -> None:
     with _yield_github_push() as dict_:
         jobs = _get_dict(dict_, "jobs")
         tag = _get_dict(jobs, "tag")
+        tag["runs-on"] = "ubuntu-latest"
         steps = _get_list(tag, "steps")
         _ = _ensure_contains_partial(
             steps,
