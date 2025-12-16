@@ -96,9 +96,6 @@ class Settings:
         default=None, help="Set up '.pre-commit-config.yaml' uv lock script"
     )
     pyproject: bool = option(default=False, help="Set up 'pyproject.toml'")
-    pyproject__dependency_groups__dev: bool = option(
-        default=False, help="Set up 'pyproject.toml' [dependency-groups.dev]"
-    )
     pyproject__project__name: str | None = option(
         default=None, help="Set up 'pyproject.toml' [project.name]"
     )
@@ -110,18 +107,18 @@ class Settings:
         factory=list, help="Set up 'pyproject.toml' [[uv.tool.index]]"
     )
     pyright: bool = option(default=False, help="Set up 'pyrightconfig.json'")
-    pyright_include: list[str] = option(
+    pyright__include: list[str] = option(
         factory=list, help="Set up 'pyrightconfig.json' [include]"
     )
     pytest: bool = option(default=False, help="Set up 'pytest.toml'")
-    pytest_asyncio: bool = option(default=False, help="Set up 'pytest.toml' asyncio_*")
-    pytest_ignore_warnings: bool = option(
+    pytest__asyncio: bool = option(default=False, help="Set up 'pytest.toml' asyncio_*")
+    pytest__ignore_warnings: bool = option(
         default=False, help="Set up 'pytest.toml' filterwarnings"
     )
-    pytest_test_paths: list[str] = option(
+    pytest__test_paths: list[str] = option(
         factory=list, help="Set up 'pytest.toml' testpaths"
     )
-    pytest_timeout: int | None = option(
+    pytest__timeout: int | None = option(
         default=None, help="Set up 'pytest.toml' timeout"
     )
     ruff: bool = option(default=False, help="Set up 'ruff.toml'")
@@ -140,320 +137,411 @@ def main(settings: Settings, /) -> None:
     _LOGGER.info("Running...")
     _run_bump_my_version(version=settings.code_version)
     _run_pre_commit_update()
-    _add_pre_commit()
-    if settings.github__push__tag:
-        _add_github_push_tag()
-    if settings.github__push__tag__major_minor:
-        _add_github_push_tag_extra("major-minor")
-    if settings.github__push__tag__major:
-        _add_github_push_tag_extra("major")
-    if settings.github__push__tag__latest:
-        _add_github_push_tag_extra("latest")
-    if settings.github__push__publish:
-        _add_github_push_publish()
-    if settings.pre_commit__dockerfmt:
-        _add_pre_commit_dockerfmt()
-    if settings.pre_commit__prettier:
-        _add_pre_commit_prettier()
-    if settings.pre_commit__ruff:
-        _add_pre_commit_ruff()
-    if settings.pre_commit__shell:
-        _add_pre_commit_shell()
-    if settings.pre_commit__taplo:
-        _add_pre_commit_taplo()
-    if settings.pre_commit__uv:
-        _add_pre_commit_uv(script=settings.pre_commit__uv__script)
-    if settings.pyproject:
-        _add_pyproject(version=settings.python_version)
-    if settings.pyproject__dependency_groups__dev:
-        _add_pyproject_dependency_groups_dev(version=settings.python_version)
-    if (name := settings.pyproject__project__name) is not None:
-        _add_pyproject_project_name(name, version=settings.python_version)
-    if settings.pyproject__project__optional_dependencies__scripts:
-        _add_pyproject_project_optional_dependencies_scripts(
-            version=settings.python_version
+    _add_pre_commit(
+        dockerfmt=settings.pre_commit__dockerfmt,
+        prettier=settings.pre_commit__prettier,
+        ruff=settings.pre_commit__ruff,
+        shell=settings.pre_commit__shell,
+        taplo=settings.pre_commit__taplo,
+        uv=settings.pre_commit__uv,
+        uv__script=settings.pre_commit__uv__script,
+    )
+    if (
+        settings.github__push__tag
+        or settings.github__push__tag__major_minor
+        or settings.github__push__tag__major
+        or settings.github__push__tag__latest
+        or settings.github__push__publish
+    ):
+        _add_github_push_yaml(
+            tag=settings.github__push__tag,
+            tag__major_minor=settings.github__push__tag__major_minor,
+            tag__major=settings.github__push__tag__major,
+            tag__latest=settings.github__push__tag__latest,
+            publish=settings.github__push__publish,
         )
-    if len(indexes := settings.pyproject__tool__uv__indexes) >= 1:
-        for name, url in indexes:
-            _add_pyproject_uv_index(name, url, version=settings.python_version)
+    if (
+        settings.pyproject
+        or (settings.pyproject__project__name is not None)
+        or settings.pyproject__project__optional_dependencies__scripts
+        or (len(settings.pyproject__tool__uv__indexes) >= 1)
+    ):
+        _add_pyproject_toml(
+            version=settings.python_version,
+            project__name=settings.pyproject__project__name,
+            project__optional_dependencies__scripts=settings.pyproject__project__optional_dependencies__scripts,
+            tool__uv__indexes=settings.pyproject__tool__uv__indexes,
+        )
     if settings.pyright:
-        _add_pyrightconfig(version=settings.python_version)
-    if len(include := settings.pyright_include) >= 1:
-        _add_pyrightconfig_include(*include, version=settings.python_version)
-    if settings.pytest:
-        _add_pytest()
-    if settings.pytest_asyncio:
-        _add_pytest_asyncio()
-    if settings.pytest_ignore_warnings:
-        _add_pytest_ignore_warnings()
-    if len(test_paths := settings.pytest_test_paths) >= 1:
-        _add_pytest_test_paths(*test_paths)
-    if (timeout := settings.pytest_timeout) is not None:
-        _add_pytest_timeout(timeout)
+        _add_pyrightconfig_json(
+            version=settings.python_version, include=settings.pyright__include
+        )
+    if (
+        settings.pytest
+        or settings.pytest__asyncio
+        or settings.pytest__ignore_warnings
+        or (len(settings.pytest__test_paths) >= 1)
+        or (settings.pytest__timeout is not None)
+    ):
+        _add_pytest_toml(
+            asyncio=settings.pytest__asyncio,
+            ignore_warnings=settings.pytest__ignore_warnings,
+            test_paths=settings.pytest__test_paths,
+            timeout=settings.pytest__timeout,
+        )
     if settings.ruff:
-        _add_ruff(version=settings.python_version)
+        _add_ruff_toml(version=settings.python_version)
     if _MODIFIED.get():
         sys.exit(1)
 
 
-def _add_github_push_publish() -> None:
-    _add_github_push_tag()
-    with _yield_github_push() as dict_:
+def _add_github_push_yaml(
+    *,
+    tag: bool = _SETTINGS.github__push__tag,
+    tag__major_minor: bool = _SETTINGS.github__push__tag__major_minor,
+    tag__major: bool = _SETTINGS.github__push__tag__major,
+    tag__latest: bool = _SETTINGS.github__push__tag__latest,
+    publish: bool = _SETTINGS.github__push__publish,
+) -> None:
+    with _yield_yaml_dict(".github/workflows/push.yaml") as dict_:
+        dict_["name"] = "push"
+        on = _get_dict(dict_, "on")
+        push = _get_dict(on, "push")
+        branches = _get_list(push, "branches")
+        _ensure_contains(branches, "master")
         jobs = _get_dict(dict_, "jobs")
-        publish = _get_dict(jobs, "publish")
-        environment = _get_dict(publish, "environment")
-        environment["name"] = "pypi"
-        needs = _get_list(publish, "needs")
-        _ensure_contains(needs, "tag")
-        permissions = _get_dict(publish, "permissions")
-        permissions["id-write"] = "write"
-        publish["runs-on"] = "ubuntu-latest"
-        steps = _get_list(publish, "steps")
-        _ = _ensure_contains_partial(
-            steps, {"name": "Check out repository", "uses": "actions/checkout@v6"}
-        )
-        _ = _ensure_contains_partial(
-            steps,
-            {
-                "name": "Install 'uv'",
-                "uses": "astral-sh/setup-uv@7",
-                "with": {"enable-cache": True},
-            },
-        )
-        _ = _ensure_contains_partial(
-            steps, {"name": "Build Python package", "run": "uv build"}
-        )
-        _ = _ensure_contains_partial(
-            steps,
-            {
-                "name": "Upload distribution",
-                "run": "uv publish --trusted-publishing always",
-            },
-        )
+        if tag or publish:
+            tag_dict = _get_dict(jobs, "tag")
+            tag_dict["runs-on"] = "ubuntu-latest"
+            steps = _get_list(tag_dict, "steps")
+            steps_dict = _ensure_contains_partial(
+                steps,
+                {"name": "Tag latest commit", "uses": "dycw/action-tag-commit@latest"},
+                extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
+            )
+            if tag__major_minor:
+                with_ = _get_dict(steps_dict, "with")
+                with_["major-minor"] = True
+            if tag__major:
+                with_ = _get_dict(steps_dict, "with")
+                with_["major"] = True
+            if tag__latest:
+                with_ = _get_dict(steps_dict, "with")
+                with_["latest"] = True
+            if tag__major_minor:
+                with_ = _get_dict(steps_dict, "with")
+                with_["major-minor"] = True
+        if publish:
+            publish_dict = _get_dict(jobs, "publish")
+            environment = _get_dict(publish_dict, "environment")
+            environment["name"] = "pypi"
+            needs = _get_list(publish_dict, "needs")
+            _ensure_contains(needs, "tag")
+            permissions = _get_dict(publish_dict, "permissions")
+            permissions["id-write"] = "write"
+            publish_dict["runs-on"] = "ubuntu-latest"
+            steps = _get_list(publish_dict, "steps")
+            _ = _ensure_contains_partial(
+                steps, {"name": "Check out repository", "uses": "actions/checkout@v6"}
+            )
+            _ = _ensure_contains_partial(
+                steps,
+                {
+                    "name": "Install 'uv'",
+                    "uses": "astral-sh/setup-uv@7",
+                    "with": {"enable-cache": True},
+                },
+            )
+            _ = _ensure_contains_partial(
+                steps, {"name": "Build Python package", "run": "uv build"}
+            )
+            _ = _ensure_contains_partial(
+                steps,
+                {
+                    "name": "Upload distribution",
+                    "run": "uv publish --trusted-publishing always",
+                },
+            )
 
 
-def _add_github_push_tag() -> None:
-    with _yield_github_push() as dict_:
-        jobs = _get_dict(dict_, "jobs")
-        tag = _get_dict(jobs, "tag")
-        tag["runs-on"] = "ubuntu-latest"
-        steps = _get_list(tag, "steps")
-        _ = _ensure_contains_partial(
-            steps,
-            {"name": "Tag latest commit", "uses": "dycw/action-tag-commit@latest"},
-            extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
-        )
-
-
-def _add_github_push_tag_extra(key: str, /) -> None:
-    with _yield_github_push() as dict_:
-        jobs = _get_dict(dict_, "jobs")
-        tag = _get_dict(jobs, "tag")
-        steps = _get_list(tag, "steps")
-        step_dict = _get_partial_dict(
-            steps,
-            {"name": "Tag latest commit", "uses": "dycw/action-tag-commit@latest"},
-        )
-        with_ = _get_dict(step_dict, "with")
-        with_[key] = True
-
-
-def _add_pre_commit() -> None:
-    url = "https://github.com/pre-commit/pre-commit-hooks"
+def _add_pre_commit(
+    *,
+    dockerfmt: bool = _SETTINGS.pre_commit__dockerfmt,
+    prettier: bool = _SETTINGS.pre_commit__prettier,
+    ruff: bool = _SETTINGS.pre_commit__ruff,
+    shell: bool = _SETTINGS.pre_commit__shell,
+    taplo: bool = _SETTINGS.pre_commit__taplo,
+    uv: bool = _SETTINGS.pre_commit__uv,
+    uv__script: str | None = _SETTINGS.pre_commit__uv__script,
+) -> None:
     with _yield_pre_commit() as dict_:
         _ensure_pre_commit_repo(
             dict_, "https://github.com/dycw/pre-commit-hook-nitpick", "nitpick"
         )
-        _ensure_pre_commit_repo(dict_, url, "check-executables-have-shebangs")
-        _ensure_pre_commit_repo(dict_, url, "check-merge-conflict")
-        _ensure_pre_commit_repo(dict_, url, "check-symlinks")
-        _ensure_pre_commit_repo(dict_, url, "destroyed-symlinks")
-        _ensure_pre_commit_repo(dict_, url, "detect-private-key")
-        _ensure_pre_commit_repo(dict_, url, "end-of-file-fixer")
+        pre_com_url = "https://github.com/pre-commit/pre-commit-hooks"
+        _ensure_pre_commit_repo(dict_, pre_com_url, "check-executables-have-shebangs")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "check-merge-conflict")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "check-symlinks")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "destroyed-symlinks")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "detect-private-key")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "end-of-file-fixer")
         _ensure_pre_commit_repo(
-            dict_, url, "mixed-line-ending", args=("add", ["--fix=lf"])
+            dict_, pre_com_url, "mixed-line-ending", args=("add", ["--fix=lf"])
         )
-        _ensure_pre_commit_repo(dict_, url, "no-commit-to-branch")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "no-commit-to-branch")
         _ensure_pre_commit_repo(
-            dict_, url, "pretty-format-json", args=("add", ["--autofix"])
+            dict_, pre_com_url, "pretty-format-json", args=("add", ["--autofix"])
         )
-        _ensure_pre_commit_repo(dict_, url, "no-commit-to-branch")
-        _ensure_pre_commit_repo(dict_, url, "trailing-whitespace")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "no-commit-to-branch")
+        _ensure_pre_commit_repo(dict_, pre_com_url, "trailing-whitespace")
+        if dockerfmt:
+            _ensure_pre_commit_repo(
+                dict_,
+                "https://github.com/reteps/dockerfmt",
+                "dockerfmt",
+                args=("add", ["--newline", "--write"]),
+            )
+        if prettier:
+            _ensure_pre_commit_repo(
+                dict_,
+                "local",
+                "prettier",
+                name="prettier",
+                entry="npx prettier --write",
+                language="system",
+                types_or=["markdown", "yaml"],
+            )
+        if ruff:
+            ruff_url = "https://github.com/astral-sh/ruff-pre-commit"
+            _ensure_pre_commit_repo(
+                dict_, ruff_url, "ruff-check", args=("add", ["--fix"])
+            )
+            _ensure_pre_commit_repo(dict_, ruff_url, "ruff-format")
+        if shell:
+            _ensure_pre_commit_repo(
+                dict_, "https://github.com/scop/pre-commit-shfmt", "shfmt"
+            )
+            _ensure_pre_commit_repo(
+                dict_, "https://github.com/koalaman/shellcheck-precommit", "shellcheck"
+            )
+        if taplo:
+            _ensure_pre_commit_repo(
+                dict_,
+                "https://github.com/compwa/taplo-pre-commit",
+                "taplo-format",
+                args=(
+                    "exact",
+                    [
+                        "--option",
+                        "indent_tables=true",
+                        "--option",
+                        "indent_entries=true",
+                        "--option",
+                        "reorder_keys=true",
+                    ],
+                ),
+            )
+        if uv or (uv__script is not None):
+            _ensure_pre_commit_repo(
+                dict_,
+                "https://github.com/astral-sh/uv-pre-commit",
+                "uv-lock",
+                files=None if uv__script is None else rf"^{escape(uv__script)}$",
+                args=(
+                    "add",
+                    ["--upgrade"] if uv__script is None else [f"--script={uv__script}"],
+                ),
+            )
 
 
-def _add_pre_commit_dockerfmt() -> None:
-    with _yield_pre_commit(desc="dockerfmt") as dict_:
-        _ensure_pre_commit_repo(
-            dict_,
-            "https://github.com/reteps/dockerfmt",
-            "dockerfmt",
-            args=("add", ["--newline", "--write"]),
-        )
-
-
-def _add_pre_commit_prettier() -> None:
-    with _yield_pre_commit(desc="prettier") as dict_:
-        _ensure_pre_commit_repo(
-            dict_,
-            "local",
-            "prettier",
-            name="prettier",
-            entry="npx prettier --write",
-            language="system",
-            types_or=["markdown", "yaml"],
-        )
-
-
-def _add_pre_commit_ruff() -> None:
-    url = "https://github.com/astral-sh/ruff-pre-commit"
-    with _yield_pre_commit(desc="ruff") as dict_:
-        _ensure_pre_commit_repo(dict_, url, "ruff-check", args=("add", ["--fix"]))
-        _ensure_pre_commit_repo(dict_, url, "ruff-format")
-
-
-def _add_pre_commit_shell() -> None:
-    with _yield_pre_commit(desc="shell") as dict_:
-        _ensure_pre_commit_repo(
-            dict_, "https://github.com/scop/pre-commit-shfmt", "shfmt"
-        )
-        _ensure_pre_commit_repo(
-            dict_, "https://github.com/koalaman/shellcheck-precommit", "shellcheck"
-        )
-
-
-def _add_pre_commit_taplo() -> None:
-    with _yield_pre_commit(desc="taplo") as dict_:
-        _ensure_pre_commit_repo(
-            dict_,
-            "https://github.com/compwa/taplo-pre-commit",
-            "taplo-format",
-            args=(
-                "exact",
-                [
-                    "--option",
-                    "indent_tables=true",
-                    "--option",
-                    "indent_entries=true",
-                    "--option",
-                    "reorder_keys=true",
-                ],
-            ),
-        )
-
-
-def _add_pre_commit_uv(*, script: str | None = None) -> None:
-    with _yield_pre_commit(desc="uv") as dict_:
-        _ensure_pre_commit_repo(
-            dict_,
-            "https://github.com/astral-sh/uv-pre-commit",
-            "uv-lock",
-            files=None if script is None else rf"^{escape(script)}$",
-            args=("add", ["--upgrade"] if script is None else [f"--script={script}"]),
-        )
-
-
-def _add_pyproject(*, version: str = _SETTINGS.python_version) -> None:
-    with _yield_pyproject(version=version):
-        ...
-
-
-def _add_pyrightconfig(*, version: str = _SETTINGS.python_version) -> None:
-    with _yield_pyrightconfig(version=version):
-        ...
-
-
-def _add_pyrightconfig_include(
-    *paths: str, version: str = _SETTINGS.python_version
+def _add_pyproject_toml(
+    *,
+    version: str = _SETTINGS.python_version,
+    project__name: str | None = _SETTINGS.pyproject__project__name,
+    project__optional_dependencies__scripts: bool = _SETTINGS.pyproject__project__optional_dependencies__scripts,
+    tool__uv__indexes: list[tuple[str, str]] = _SETTINGS.pyproject__tool__uv__indexes,
 ) -> None:
-    with _yield_pyrightconfig(version=version) as dict_:
-        include = _get_list(dict_, "include")
-        _ensure_contains(include, *paths)
-
-
-def _add_pytest() -> None:
-    with _yield_pytest():
-        ...
-
-
-def _add_pytest_asyncio() -> None:
-    with _yield_pytest(desc="filterwarnings") as doc:
-        pytest = _get_table(doc, "pytest")
-        pytest["asyncio_default_fixture_loop_scope"] = "function"
-        pytest["asyncio_mode"] = "auto"
-
-
-def _add_pytest_ignore_warnings() -> None:
-    with _yield_pytest(desc="asyncio_*") as doc:
-        pytest = _get_table(doc, "pytest")
-        filterwarnings = _get_array(pytest, "filterwarnings")
-        _ensure_contains(
-            filterwarnings,
-            "ignore::DeprecationWarning",
-            "ignore::ResourceWarning",
-            "ignore::RuntimeWarning",
-        )
-
-
-def _add_pytest_test_paths(*paths: str) -> None:
-    with _yield_pytest(desc="testpaths") as doc:
-        pytest = _get_table(doc, "pytest")
-        testpaths = _get_array(pytest, "testpaths")
-        _ensure_contains(testpaths, *paths)
-
-
-def _add_pytest_timeout(timeout: int, /) -> None:
-    with _yield_pytest(desc="timeout") as doc:
-        pytest = _get_table(doc, "pytest")
-        pytest["timeout"] = str(timeout)
-
-
-def _add_ruff(*, version: str = _SETTINGS.python_version) -> None:
-    with _yield_ruff(version=version):
-        ...
-
-
-def _add_pyproject_dependency_groups_dev(
-    *, version: str = _SETTINGS.python_version
-) -> None:
-    with _yield_pyproject(desc="[dependency-groups.dev]", version=version) as doc:
-        dep_grps = _get_table(doc, "dependency-groups")
-        dev = _get_array(dep_grps, "dev")
+    with _yield_toml_doc("pyproject.toml") as doc:
+        build_system = _get_table(doc, "build-system")
+        build_system["build-backend"] = "uv_build"
+        build_system["requires"] = ["uv_build"]
+        project = _get_table(doc, "project")
+        project["requires-python"] = f">= {version}"
+        if project__name is not None:
+            project["name"] = project__name
+        dependency_groups = _get_table(doc, "dependency-groups")
+        dev = _get_array(dependency_groups, "dev")
         _ensure_contains(dev, "dycw-utilities[test]")
         _ensure_contains(dev, "rich")
+        if project__optional_dependencies__scripts:
+            optional_dependencies = _get_table(project, "optional-dependencies")
+            scripts = _get_array(optional_dependencies, "scripts")
+            _ensure_contains(scripts, "click >=8.3.1")
+        if len(tool__uv__indexes) >= 1:
+            tool = _get_table(doc, "tool")
+            uv = _get_table(tool, "uv")
+            indexes = _get_aot(uv, "index")
+            for name, url in tool__uv__indexes:
+                index = table()
+                index["explicit"] = True
+                index["name"] = name
+                index["url"] = url
+                _ensure_aot_contains(indexes, index)
 
 
-def _add_pyproject_project_name(
-    name: str, /, *, version: str = _SETTINGS.python_version
+def _add_pyrightconfig_json(
+    *,
+    version: str = _SETTINGS.python_version,
+    include: list[str] = _SETTINGS.pyright__include,
 ) -> None:
-    with _yield_pyproject(desc="project.name", version=version) as doc:
-        proj = _get_table(doc, "project")
-        proj["name"] = name
+    with _yield_json_dict("pyrightconfig.json") as dict_:
+        dict_["deprecateTypingAliases"] = True
+        dict_["enableReachabilityAnalysis"] = False
+        dict_["pythonVersion"] = version
+        dict_["reportCallInDefaultInitializer"] = True
+        dict_["reportImplicitOverride"] = True
+        dict_["reportImplicitStringConcatenation"] = True
+        dict_["reportImportCycles"] = True
+        dict_["reportMissingSuperCall"] = True
+        dict_["reportMissingTypeArgument"] = False
+        dict_["reportMissingTypeStubs"] = False
+        dict_["reportPrivateImportUsage"] = False
+        dict_["reportPrivateUsage"] = False
+        dict_["reportPropertyTypeMismatch"] = True
+        dict_["reportUninitializedInstanceVariable"] = True
+        dict_["reportUnknownArgumentType"] = False
+        dict_["reportUnknownMemberType"] = False
+        dict_["reportUnknownParameterType"] = False
+        dict_["reportUnknownVariableType"] = False
+        dict_["reportUnnecessaryComparison"] = False
+        dict_["reportUnnecessaryTypeIgnoreComment"] = True
+        dict_["reportUnusedCallResult"] = True
+        dict_["reportUnusedImport"] = False
+        dict_["reportUnusedVariable"] = False
+        dict_["typeCheckingMode"] = "strict"
+        if len(include) >= 1:
+            include_list = _get_list(dict_, "include")
+            _ensure_contains(include_list, *include)
 
 
-def _add_pyproject_project_optional_dependencies_scripts(
-    *, version: str = _SETTINGS.python_version
+def _add_pytest_toml(
+    *,
+    asyncio: bool = _SETTINGS.pytest__asyncio,
+    ignore_warnings: bool = _SETTINGS.pytest__ignore_warnings,
+    test_paths: list[str] = _SETTINGS.pytest__test_paths,
+    timeout: int | None = _SETTINGS.pytest__timeout,
 ) -> None:
-    with _yield_pyproject(
-        desc="[project.optional-dependencies.scripts]", version=version
-    ) as doc:
-        proj = _get_table(doc, "project")
-        opt_deps = _get_table(proj, "optional-dependencies")
-        scripts = _get_array(opt_deps, "scripts")
-        _ensure_contains(scripts, "click >=8.3.1")
+    with _yield_toml_doc("pytest.toml") as doc:
+        pytest = _get_table(doc, "pytest")
+        addopts = _get_array(pytest, "addopts")
+        _ensure_contains(
+            addopts,
+            "-ra",
+            "-vv",
+            "--color=auto",
+            "--durations=10",
+            "--durations-min=10",
+        )
+        pytest["collect_imported_tests"] = False
+        pytest["empty_parameter_set_mark"] = "fail_at_collect"
+        filterwarnings = _get_array(pytest, "filterwarnings")
+        _ensure_contains(filterwarnings, "error")
+        pytest["minversion"] = "9.0"
+        pytest["strict"] = True
+        pytest["xfail_strict"] = True
+        if asyncio:
+            pytest["asyncio_default_fixture_loop_scope"] = "function"
+            pytest["asyncio_mode"] = "auto"
+        if ignore_warnings:
+            filterwarnings = _get_array(pytest, "filterwarnings")
+            _ensure_contains(
+                filterwarnings,
+                "ignore::DeprecationWarning",
+                "ignore::ResourceWarning",
+                "ignore::RuntimeWarning",
+            )
+        if len(test_paths) >= 1:
+            testpaths_list = _get_array(pytest, "testpaths")
+            _ensure_contains(testpaths_list, *test_paths)
+        if timeout is not None:
+            pytest["timeout"] = str(timeout)
 
 
-def _add_pyproject_uv_index(
-    name: str, url: str, /, *, version: str = _SETTINGS.python_version
-) -> None:
-    with _yield_pyproject(desc="[tool.uv.index]", version=version) as doc:
-        tool = _get_table(doc, "tool")
-        uv = _get_table(tool, "uv")
-        indexes = _get_aot(uv, "index")
-        index = table()
-        index["explicit"] = True
-        index["name"] = name
-        index["url"] = url
-        _ensure_aot_contains(indexes, index)
+def _add_ruff_toml(*, version: str = _SETTINGS.python_version) -> None:
+    with _yield_toml_doc("ruff.toml") as doc:
+        doc["target-version"] = f"py{version.replace('.', '')}"
+        doc["unsafe-fixes"] = True
+        fmt = _get_table(doc, "format")
+        fmt["preview"] = True
+        fmt["skip-magic-trailing-comma"] = True
+        lint = _get_table(doc, "lint")
+        lint["explicit-preview-rules"] = True
+        fixable = _get_array(lint, "fixable")
+        _ensure_contains(fixable, "ALL")
+        ignore = _get_array(lint, "ignore")
+        _ensure_contains(
+            ignore,
+            "ANN401",  # any-type
+            "ASYNC109",  # async-function-with-timeout
+            "C901",  # complex-structure
+            "CPY",  # flake8-copyright
+            "D",  # pydocstyle
+            "E501",  # line-too-long
+            "PD",  # pandas-vet
+            "PERF203",  # try-except-in-loop
+            "PLC0415",  # import-outside-top-level
+            "PLE1205",  # logging-too-many-args
+            "PLR0904",  # too-many-public-methods
+            "PLR0911",  # too-many-return-statements
+            "PLR0912",  # too-many-branches
+            "PLR0913",  # too-many-arguments
+            "PLR0915",  # too-many-statements
+            "PLR2004",  # magic-value-comparison
+            "PT012",  # pytest-raises-with-multiple-statements
+            "PT013",  # pytest-incorrect-pytest-import
+            "PYI041",  # redundant-numeric-union
+            "S202",  # tarfile-unsafe-members
+            "S310",  # suspicious-url-open-usage
+            "S311",  # suspicious-non-cryptographic-random-usage
+            "S602",  # subprocess-popen-with-shell-equals-true
+            "S603",  # subprocess-without-shell-equals-true
+            "S607",  # start-process-with-partial-path
+            # preview
+            "S101",  # assert
+            # formatter
+            "W191",  # tab-indentation
+            "E111",  # indentation-with-invalid-multiple
+            "E114",  # indentation-with-invalid-multiple-comment
+            "E117",  # over-indented
+            "COM812",  # missing-trailing-comma
+            "COM819",  # prohibited-trailing-comma
+            "ISC001",  # single-line-implicit-string-concatenation
+            "ISC002",  # multi-line-implicit-string-concatenation
+        )
+        lint["preview"] = True
+        select = _get_array(lint, "select")
+        selected_rules = [
+            "RUF022",  # unsorted-dunder-all
+            "RUF029",  # unused-async
+        ]
+        _ensure_contains(select, "ALL", *selected_rules)
+        extend_per_file_ignores = _get_table(lint, "extend-per-file-ignores")
+        test_py = _get_array(extend_per_file_ignores, "test_*.py")
+        test_py_rules = [
+            "S101",  # assert
+            "SLF001",  # private-member-access
+        ]
+        _ensure_contains(test_py, *test_py_rules)
+        _ensure_not_contains(ignore, *selected_rules, *test_py_rules)
+        bugbear = _get_table(lint, "flake8-bugbear")
+        extend_immutable_calls = _get_array(bugbear, "extend-immutable-calls")
+        _ensure_contains(extend_immutable_calls, "typing.cast")
+        tidy_imports = _get_table(lint, "flake8-tidy-imports")
+        tidy_imports["ban-relative-imports"] = "all"
+        isort = _get_table(lint, "isort")
+        req_imps = _get_array(isort, "required-imports")
+        _ensure_contains(req_imps, "from __future__ import annotations")
+        isort["split-on-trailing-comma"] = False
 
 
 def _ensure_aot_contains(array: AoT, /, *tables: Table) -> None:
@@ -651,177 +739,15 @@ def _yield_bump_my_version(
 
 
 @contextmanager
-def _yield_github_push(*, desc: str | None = None) -> Iterator[StrDict]:
-    with _yield_yaml_dict(".github/workflows/push.yaml", desc=desc) as dict_:
-        dict_["name"] = "push"
-        on = _get_dict(dict_, "on")
-        push = _get_dict(on, "push")
-        branches = _get_list(push, "branches")
-        _ensure_contains(branches, "master")
+def _yield_json_dict(path: PathLike, /) -> Iterator[StrDict]:
+    with _yield_write_context(path, json.loads, dict, json.dumps) as dict_:
         yield dict_
 
 
 @contextmanager
-def _yield_json_dict(
-    path: PathLike, /, *, desc: str | None = None
-) -> Iterator[StrDict]:
-    with _yield_write_context(path, json.loads, dict, json.dumps, desc=desc) as dict_:
+def _yield_pre_commit() -> Iterator[StrDict]:
+    with _yield_yaml_dict(".pre-commit-config.yaml") as dict_:
         yield dict_
-
-
-@contextmanager
-def _yield_pre_commit(*, desc: str | None = None) -> Iterator[StrDict]:
-    with _yield_yaml_dict(".pre-commit-config.yaml", desc=desc) as dict_:
-        yield dict_
-
-
-@contextmanager
-def _yield_pyproject(
-    *, desc: str | None = None, version: str = _SETTINGS.python_version
-) -> Iterator[TOMLDocument]:
-    with _yield_toml_doc("pyproject.toml", desc=desc) as doc:
-        bld_sys = _get_table(doc, "build-system")
-        bld_sys["build-backend"] = "uv_build"
-        bld_sys["requires"] = ["uv_build"]
-        project = _get_table(doc, "project")
-        project["requires-python"] = f">= {version}"
-        yield doc
-
-
-@contextmanager
-def _yield_pyrightconfig(
-    *, desc: str | None = None, version: str = _SETTINGS.python_version
-) -> Iterator[StrDict]:
-    with _yield_json_dict("pyrightconfig.json", desc=desc) as dict_:
-        dict_["deprecateTypingAliases"] = True
-        dict_["enableReachabilityAnalysis"] = False
-        dict_["pythonVersion"] = version
-        dict_["reportCallInDefaultInitializer"] = True
-        dict_["reportImplicitOverride"] = True
-        dict_["reportImplicitStringConcatenation"] = True
-        dict_["reportImportCycles"] = True
-        dict_["reportMissingSuperCall"] = True
-        dict_["reportMissingTypeArgument"] = False
-        dict_["reportMissingTypeStubs"] = False
-        dict_["reportPrivateImportUsage"] = False
-        dict_["reportPrivateUsage"] = False
-        dict_["reportPropertyTypeMismatch"] = True
-        dict_["reportUninitializedInstanceVariable"] = True
-        dict_["reportUnknownArgumentType"] = False
-        dict_["reportUnknownMemberType"] = False
-        dict_["reportUnknownParameterType"] = False
-        dict_["reportUnknownVariableType"] = False
-        dict_["reportUnnecessaryComparison"] = False
-        dict_["reportUnnecessaryTypeIgnoreComment"] = True
-        dict_["reportUnusedCallResult"] = True
-        dict_["reportUnusedImport"] = False
-        dict_["reportUnusedVariable"] = False
-        dict_["typeCheckingMode"] = "strict"
-        yield dict_
-
-
-@contextmanager
-def _yield_pytest(*, desc: str | None = None) -> Iterator[TOMLDocument]:
-    with _yield_toml_doc("pytest.toml", desc=desc) as doc:
-        pytest = _get_table(doc, "pytest")
-        addopts = _get_array(pytest, "addopts")
-        _ensure_contains(
-            addopts,
-            "-ra",
-            "-vv",
-            "--color=auto",
-            "--durations=10",
-            "--durations-min=10",
-        )
-        pytest["collect_imported_tests"] = False
-        pytest["empty_parameter_set_mark"] = "fail_at_collect"
-        filterwarnings = _get_array(pytest, "filterwarnings")
-        _ensure_contains(filterwarnings, "error")
-        pytest["minversion"] = "9.0"
-        pytest["strict"] = True
-        pytest["xfail_strict"] = True
-        yield doc
-
-
-@contextmanager
-def _yield_ruff(
-    *, desc: str | None = None, version: str = _SETTINGS.python_version
-) -> Iterator[TOMLDocument]:
-    with _yield_toml_doc("ruff.toml", desc=desc) as doc:
-        doc["target-version"] = f"py{version.replace('.', '')}"
-        doc["unsafe-fixes"] = True
-        fmt = _get_table(doc, "format")
-        fmt["preview"] = True
-        fmt["skip-magic-trailing-comma"] = True
-        lint = _get_table(doc, "lint")
-        lint["explicit-preview-rules"] = True
-        fixable = _get_array(lint, "fixable")
-        _ensure_contains(fixable, "ALL")
-        ignore = _get_array(lint, "ignore")
-        _ensure_contains(
-            ignore,
-            "ANN401",  # any-type
-            "ASYNC109",  # async-function-with-timeout
-            "C901",  # complex-structure
-            "CPY",  # flake8-copyright
-            "D",  # pydocstyle
-            "E501",  # line-too-long
-            "PD",  # pandas-vet
-            "PERF203",  # try-except-in-loop
-            "PLC0415",  # import-outside-top-level
-            "PLE1205",  # logging-too-many-args
-            "PLR0904",  # too-many-public-methods
-            "PLR0911",  # too-many-return-statements
-            "PLR0912",  # too-many-branches
-            "PLR0913",  # too-many-arguments
-            "PLR0915",  # too-many-statements
-            "PLR2004",  # magic-value-comparison
-            "PT012",  # pytest-raises-with-multiple-statements
-            "PT013",  # pytest-incorrect-pytest-import
-            "PYI041",  # redundant-numeric-union
-            "S202",  # tarfile-unsafe-members
-            "S310",  # suspicious-url-open-usage
-            "S311",  # suspicious-non-cryptographic-random-usage
-            "S602",  # subprocess-popen-with-shell-equals-true
-            "S603",  # subprocess-without-shell-equals-true
-            "S607",  # start-process-with-partial-path
-            # preview
-            "S101",  # assert
-            # formatter
-            "W191",  # tab-indentation
-            "E111",  # indentation-with-invalid-multiple
-            "E114",  # indentation-with-invalid-multiple-comment
-            "E117",  # over-indented
-            "COM812",  # missing-trailing-comma
-            "COM819",  # prohibited-trailing-comma
-            "ISC001",  # single-line-implicit-string-concatenation
-            "ISC002",  # multi-line-implicit-string-concatenation
-        )
-        lint["preview"] = True
-        select = _get_array(lint, "select")
-        selected_rules = [
-            "RUF022",  # unsorted-dunder-all
-            "RUF029",  # unused-async
-        ]
-        _ensure_contains(select, "ALL", *selected_rules)
-        extend_per_file_ignores = _get_table(lint, "extend-per-file-ignores")
-        test_py = _get_array(extend_per_file_ignores, "test_*.py")
-        test_py_rules = [
-            "S101",  # assert
-            "SLF001",  # private-member-access
-        ]
-        _ensure_contains(test_py, *test_py_rules)
-        _ensure_not_contains(ignore, *selected_rules, *test_py_rules)
-        bugbear = _get_table(lint, "flake8-bugbear")
-        extend_immutable_calls = _get_array(bugbear, "extend-immutable-calls")
-        _ensure_contains(extend_immutable_calls, "typing.cast")
-        tidy_imports = _get_table(lint, "flake8-tidy-imports")
-        tidy_imports["ban-relative-imports"] = "all"
-        isort = _get_table(lint, "isort")
-        req_imps = _get_array(isort, "required-imports")
-        _ensure_contains(req_imps, "from __future__ import annotations")
-        isort["split-on-trailing-comma"] = False
-        yield doc
 
 
 @contextmanager
@@ -831,13 +757,11 @@ def _yield_write_context[T](
     get_default: Callable[[], T],
     dumps: Callable[[T], str],
     /,
-    *,
-    desc: str | None = None,
 ) -> Iterator[T]:
     path = Path(path)
 
     def run(verb: str, data: T, /) -> None:
-        _LOGGER.info("%s '%s'%s...", verb, path, "" if desc is None else f" {desc}")
+        _LOGGER.info("%s '%s'...", verb, path)
         with writer(path, overwrite=True) as temp:
             _ = temp.write_text(dumps(data))
         _ = _MODIFIED.set(True)
@@ -855,22 +779,14 @@ def _yield_write_context[T](
 
 
 @contextmanager
-def _yield_yaml_dict(
-    path: PathLike, /, *, desc: str | None = None
-) -> Iterator[StrDict]:
-    with _yield_write_context(
-        path, yaml.safe_load, dict, yaml.safe_dump, desc=desc
-    ) as dict_:
+def _yield_yaml_dict(path: PathLike, /) -> Iterator[StrDict]:
+    with _yield_write_context(path, yaml.safe_load, dict, yaml.safe_dump) as dict_:
         yield dict_
 
 
 @contextmanager
-def _yield_toml_doc(
-    path: PathLike, /, *, desc: str | None = None
-) -> Iterator[TOMLDocument]:
-    with _yield_write_context(
-        path, tomlkit.parse, document, tomlkit.dumps, desc=desc
-    ) as doc:
+def _yield_toml_doc(path: PathLike, /) -> Iterator[TOMLDocument]:
+    with _yield_write_context(path, tomlkit.parse, document, tomlkit.dumps) as doc:
         yield doc
 
 
