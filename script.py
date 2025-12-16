@@ -260,7 +260,7 @@ def _add_github_push_yaml(
             needs = _get_list(publish_dict, "needs")
             _ensure_contains(needs, "tag")
             permissions = _get_dict(publish_dict, "permissions")
-            permissions["id-write"] = "write"
+            permissions["id-token"] = "write"
             publish_dict["runs-on"] = "ubuntu-latest"
             steps = _get_list(publish_dict, "steps")
             _ = _ensure_contains_partial(
