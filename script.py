@@ -63,7 +63,7 @@ class Settings:
         default=False, help="Set up 'push--tag.yaml' with the 'major.minor' tag"
     )
     github__push_tag__major: bool = option(
-        default=False, help="Set up 'push--tag.yaml' with the the 'major' tag"
+        default=False, help="Set up 'push--tag.yaml' with the 'major' tag"
     )
     github__push_tag__latest: bool = option(
         default=False, help="Set up 'push--tag.yaml' with the 'latest' tag"
