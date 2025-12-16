@@ -212,7 +212,14 @@ def _add_coveragerc_toml() -> None:
         run["parallel"] = True
 
 
-def _add_github_push_publish() -> None:
+def _add_github_push_yaml(
+    *,
+    tag: bool = _SETTINGS.github__push__tag,
+    tag__major_minor: bool = _SETTINGS.github__push__tag__major_minor,
+    tag__major: bool = _SETTINGS.github__push__tag__major,
+    tag__latest: bool = _SETTINGS.github__push__tag__latest,
+    publish: bool = _SETTINGS.github__push__publish,
+) -> None:
     _add_github_push_tag()
     with _yield_github_push() as dict_:
         jobs = _get_dict(dict_, "jobs")
