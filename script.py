@@ -409,6 +409,9 @@ def _ensure_aot_contains(array: AoT, /, *tables: Table) -> None:
 
 
 def _ensure_contains(array: HasAppend, /, *objs: Any) -> None:
+    if isinstance(array, AoT):
+        msg = f"Use {_ensure_aot_contains.__name__!r} instead of {_ensure_contains.__name__!r}"
+        raise TypeError(msg)
     for obj in objs:
         if obj not in array:
             array.append(obj)
