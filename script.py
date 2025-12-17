@@ -139,6 +139,7 @@ def main(settings: Settings, /) -> None:
         _LOGGER.info("Dry run; exiting...")
         return
     _LOGGER.info("Running...")
+    _check_versions()
     _run_bump_my_version(version=settings.code_version)
     _run_pre_commit_update()
     _add_pre_commit(
@@ -564,6 +565,17 @@ def _add_ruff_toml(*, version: str = _SETTINGS.python_version) -> None:
         req_imps = _get_array(isort, "required-imports")
         _ensure_contains(req_imps, "from __future__ import annotations")
         isort["split-on-trailing-comma"] = False
+
+
+def _check_versions() -> None:
+    version = check_output(
+        ["bump-my-version", "show", "current_version"], text=True
+    ).rstrip("\n")
+    try:
+        _ = check_call(["bump-my-version", "replace", "--current-version", version])
+    except CalledProcessError:
+        msg = f"Inconsistent versions; got be {version}"
+        raise ValueError(msg) from None
 
 
 def _ensure_aot_contains(array: AoT, /, *tables: Table) -> None:
