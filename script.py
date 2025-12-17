@@ -719,6 +719,7 @@ def _run_bump_my_version() -> None:
         return
 
     def bump() -> None:
+        _LOGGER.info("Running 'bump-my-version'...")
         _ = check_call(["bump-my-version", "bump", "patch"])
         _ = _MODIFIED.set(True)
 
