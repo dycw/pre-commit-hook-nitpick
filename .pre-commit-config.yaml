@@ -40,7 +40,7 @@ repos:
           - --ruff
         id: nitpick
     repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: 0.3.4
+    rev: 0.3.6
   - hooks:
       - id: replace-sequence-str
     repo: https://github.com/dycw/pre-commit-hooks
