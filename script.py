@@ -739,7 +739,7 @@ def _run_bump_my_version() -> None:
 
     try:
         prev = _get_version_from_git_tag()
-    except (CalledProcessError, ParseVersionError, ValueError):
+    except (CalledProcessError, ValueError):
         try:
             prev = _get_version_from_git_show()
         except (CalledProcessError, ParseVersionError, NonExistentKey):
