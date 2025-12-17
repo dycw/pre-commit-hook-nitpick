@@ -64,6 +64,9 @@ class Settings:
     github__push__publish: bool = option(
         default=False, help="Set up 'push.yaml' publishing"
     )
+    github__push__publish__trusted_publishing: bool = option(
+        default=False, help="Set up 'push.yaml' with trusted publishing"
+    )
     github__push__tag: bool = option(default=False, help="Set up 'push.yaml' tagging")
     github__push__tag__major_minor: bool = option(
         default=False, help="Set up 'push.yaml' with the 'major.minor' tag"
@@ -150,18 +153,20 @@ def main(settings: Settings, /) -> None:
     if settings.coverage:
         _add_coveragerc_toml()
     if (
-        settings.github__push__tag
+        settings.github__push__publish
+        or settings.github__push__publish__trusted_publishing
+        or settings.github__push__tag
         or settings.github__push__tag__major_minor
         or settings.github__push__tag__major
         or settings.github__push__tag__latest
-        or settings.github__push__publish
     ):
         _add_github_push_yaml(
+            publish=settings.github__push__publish,
+            publish__trusted_publishing=settings.github__push__publish__trusted_publishing,
             tag=settings.github__push__tag,
             tag__major_minor=settings.github__push__tag__major_minor,
             tag__major=settings.github__push__tag__major,
             tag__latest=settings.github__push__tag__latest,
-            publish=settings.github__push__publish,
         )
     if (
         settings.pyproject
@@ -219,11 +224,12 @@ def _add_coveragerc_toml() -> None:
 
 def _add_github_push_yaml(
     *,
+    publish: bool = _SETTINGS.github__push__publish,
+    publish__trusted_publishing: bool = _SETTINGS.github__push__publish__trusted_publishing,
     tag: bool = _SETTINGS.github__push__tag,
     tag__major_minor: bool = _SETTINGS.github__push__tag__major_minor,
     tag__major: bool = _SETTINGS.github__push__tag__major,
     tag__latest: bool = _SETTINGS.github__push__tag__latest,
-    publish: bool = _SETTINGS.github__push__publish,
 ) -> None:
     with _yield_yaml_dict(".github/workflows/push.yaml") as dict_:
         dict_["name"] = "push"
@@ -232,7 +238,26 @@ def _add_github_push_yaml(
         branches = _get_list(push, "branches")
         _ensure_contains(branches, "master")
         jobs = _get_dict(dict_, "jobs")
-        if tag:
+        if publish or publish__trusted_publishing:
+            publish_dict = _get_dict(jobs, "publish")
+            environment = _get_dict(publish_dict, "environment")
+            environment["name"] = "pypi"
+            permissions = _get_dict(publish_dict, "permissions")
+            permissions["id-token"] = "write"
+            publish_dict["runs-on"] = "ubuntu-latest"
+            steps = _get_list(publish_dict, "steps")
+            steps_dict = _ensure_contains_partial(
+                steps,
+                {
+                    "name": "Build Python package and upload distribution",
+                    "uses": "dycw/action-uv-publish@latest",
+                },
+                extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
+            )
+            if publish__trusted_publishing:
+                with_ = _get_dict(steps_dict, "with")
+                with_["trusted-publishing"] = True
+        if tag or tag__major_minor or tag__major or tag__latest:
             tag_dict = _get_dict(jobs, "tag")
             tag_dict["runs-on"] = "ubuntu-latest"
             steps = _get_list(tag_dict, "steps")
@@ -250,25 +275,6 @@ def _add_github_push_yaml(
             if tag__latest:
                 with_ = _get_dict(steps_dict, "with")
                 with_["latest"] = True
-            if tag__major_minor:
-                with_ = _get_dict(steps_dict, "with")
-                with_["major-minor"] = True
-        if publish:
-            publish_dict = _get_dict(jobs, "publish")
-            environment = _get_dict(publish_dict, "environment")
-            environment["name"] = "pypi"
-            permissions = _get_dict(publish_dict, "permissions")
-            permissions["id-token"] = "write"
-            publish_dict["runs-on"] = "ubuntu-latest"
-            steps = _get_list(publish_dict, "steps")
-            _ = _ensure_contains_partial(
-                steps,
-                {
-                    "name": "Build Python package and upload distribution",
-                    "uses": "dycw/action-uv-publish@latest",
-                },
-                extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
-            )
 
 
 def _add_pre_commit(
