@@ -757,7 +757,7 @@ def _run_pre_commit_update() -> None:
 
 
 def _set_version(version: Version, /) -> None:
-    _ = check_call(["bump-my-version", "replace", "--current-version", str(version)])
+    _ = check_call(["bump-my-version", "replace", "--new-version", str(version)])
 
 
 @contextmanager
