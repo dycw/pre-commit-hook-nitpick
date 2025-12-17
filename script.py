@@ -656,6 +656,10 @@ def _get_aot(container: HasSetDefault, key: str, /) -> AoT:
     return ensure_class(container.setdefault(key, aot()), AoT)
 
 
+def _get_aot_strict(container: HasSetDefault, key: str, /) -> AoT:
+    return ensure_class(container[key], AoT)
+
+
 def _get_array(container: HasSetDefault, key: str, /) -> Array:
     return ensure_class(container.setdefault(key, array()), Array)
 
@@ -732,9 +736,9 @@ def _run_bump_my_version() -> None:
     if search("template", str(get_repo_root())):
         return
 
-    def bump() -> None:
-        _LOGGER.info("Running 'bump-my-version'...")
-        _ = check_call(["bump-my-version", "bump", "patch"])
+    def run(version: Version, /) -> None:
+        _LOGGER.info("Setting version to %s...", version)
+        _set_version(version)
         _ = _MODIFIED.set(True)
 
     try:
@@ -743,12 +747,12 @@ def _run_bump_my_version() -> None:
         try:
             prev = _get_version_from_git_show()
         except (CalledProcessError, ParseVersionError, NonExistentKey):
-            bump()
+            run(Version(0, 1, 0))
             return
     with _yield_bump_my_version() as doc:
         current = _get_version_from_bump_toml(doc)
     if current not in {prev.bump_patch(), prev.bump_minor(), prev.bump_major()}:
-        bump()
+        run(prev.bump_patch())
 
 
 def _run_pre_commit_update() -> None:
@@ -771,7 +775,42 @@ def _run_pre_commit_update() -> None:
 
 
 def _set_version(version: Version, /) -> None:
-    _ = check_call(["bump-my-version", "replace", "--new-version", str(version)])
+    with _yield_bump_my_version() as doc:
+        tool = _get_table(doc, "tool")
+        bumpversion = _get_table(tool, "bumpversion")
+        try:
+            files_aot = _get_aot_strict(bumpversion, "files")
+        except KeyError:
+            extra: list[str] = []
+        else:
+            extra: list[str] = [f["filename"] for f in files_aot]
+    _ = check_call([
+        "bump-my-version",
+        "replace",
+        "--new-version",
+        str(version),
+        ".bumpversion.toml",
+        *extra,
+    ])
+
+
+"""
+[tool]
+  [tool.bumpversion]
+    allow_dirty = true
+    current_version = "0.3.5"
+
+    [[tool.bumpversion.files]]
+      filename = "pyproject.toml"
+      replace = "version = \"{new_version}\""
+      search = "version = \"{current_version}\""
+
+    [[tool.bumpversion.files]]
+      filename = "src/uv_publish/__init__.py"
+      replace = "__version__ = \"{new_version}\""
+      search = "__version__ = \"{current_version}\""
+
+"""
 
 
 @contextmanager
