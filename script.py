@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
 from logging import getLogger
 from pathlib import Path
@@ -568,7 +568,7 @@ def _add_ruff_toml(*, version: str = _SETTINGS.python_version) -> None:
 
 def _check_versions() -> None:
     with _yield_bump_my_version() as doc:
-        version = _get_version(doc)
+        version = _get_version_from_bump_toml(doc)
     try:
         _set_version(version)
     except CalledProcessError:
@@ -702,16 +702,30 @@ def _get_table(container: HasSetDefault, key: str, /) -> Table:
     return ensure_class(container.setdefault(key, table()), Table)
 
 
-def _get_version(obj: TOMLDocument | str, /) -> Version:
+def _get_version_from_bump_toml(obj: TOMLDocument | str, /) -> Version:
     match obj:
         case TOMLDocument() as doc:
             tool = _get_table(doc, "tool")
             bumpversion = _get_table(tool, "bumpversion")
             return parse_version(str(bumpversion["current_version"]))
         case str() as text:
-            return _get_version(tomlkit.parse(text))
+            return _get_version_from_bump_toml(tomlkit.parse(text))
         case never:
             assert_never(never)
+
+
+def _get_version_from_git_show() -> Version:
+    text = check_output(["git", "show", "origin/master:.bumpversion.toml"], text=True)
+    return _get_version_from_bump_toml(text.rstrip("\n"))
+
+
+def _get_version_from_git_tag() -> Version:
+    text = check_output(["git", "tag", "--points-at", "origin/master"], text=True)
+    for line in text.splitlines():
+        with suppress(ParseVersionError):
+            return parse_version(line)
+    msg = "No valid version from 'git tag'"
+    raise ValueError(msg)
 
 
 def _run_bump_my_version() -> None:
@@ -724,21 +738,15 @@ def _run_bump_my_version() -> None:
         _ = _MODIFIED.set(True)
 
     try:
-        text = check_output(
-            ["git", "tag", "--points-at", "origin/master"], text=True
-        ).rstrip("\n")
-        prev = parse_version(text)
-    except (CalledProcessError, ParseVersionError):
+        prev = _get_version_from_git_tag()
+    except (CalledProcessError, ParseVersionError, ValueError):
         try:
-            text = check_output(
-                ["git", "show", "origin/master:.bumpversion.toml"], text=True
-            ).rstrip("\n")
-            prev = _get_version(text)
+            prev = _get_version_from_git_show()
         except (CalledProcessError, ParseVersionError, NonExistentKey):
             bump()
             return
     with _yield_bump_my_version() as doc:
-        current = _get_version(doc)
+        current = _get_version_from_bump_toml(doc)
     if current not in {prev.bump_patch(), prev.bump_minor(), prev.bump_major()}:
         bump()
 
