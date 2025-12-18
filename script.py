@@ -296,7 +296,7 @@ def _add_github_push_yaml(
             steps_dict = _ensure_contains_partial(
                 steps,
                 {
-                    "name": "Build Python package and upload distribution",
+                    "name": "Build and publish Python packages",
                     "uses": "dycw/action-uv-publish@latest",
                 },
                 extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
