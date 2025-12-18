@@ -99,6 +99,9 @@ class Settings:
         default=None, help="Set up '.pre-commit-config.yaml' uv lock script"
     )
     pyproject: bool = option(default=False, help="Set up 'pyproject.toml'")
+    pyproject__project__description: str | None = option(
+        default=None, help="Set up 'pyproject.toml' [project.description]"
+    )
     pyproject__project__name: str | None = option(
         default=None, help="Set up 'pyproject.toml' [project.name]"
     )
@@ -124,6 +127,7 @@ class Settings:
     pytest__timeout: int | None = option(
         default=None, help="Set up 'pytest.toml' timeout"
     )
+    readme: bool = option(default=False, help="Set up 'README.md'")
     ruff: bool = option(default=False, help="Set up 'ruff.toml'")
     dry_run: bool = option(default=False, help="Dry run the CLI")
 
@@ -170,13 +174,17 @@ def main(settings: Settings, /) -> None:
         )
     if (
         settings.pyproject
+        or (settings.pyproject__project__description is not None)
         or (settings.pyproject__project__name is not None)
         or settings.pyproject__project__optional_dependencies__scripts
         or (len(settings.pyproject__tool__uv__indexes) >= 1)
+        or settings.readme
     ):
         _add_pyproject_toml(
             version=settings.python_version,
+            project__description=settings.pyproject__project__description,
             project__name=settings.pyproject__project__name,
+            project__readme=settings.readme,
             project__optional_dependencies__scripts=settings.pyproject__project__optional_dependencies__scripts,
             tool__uv__indexes=settings.pyproject__tool__uv__indexes,
         )
@@ -199,6 +207,11 @@ def main(settings: Settings, /) -> None:
             timeout=settings.pytest__timeout,
             coverage=settings.coverage,
             pyproject__project__name=settings.pyproject__project__name,
+        )
+    if settings.readme:
+        _add_readme_md(
+            name=settings.pyproject__project__name,
+            description=settings.pyproject__project__description,
         )
     if settings.ruff:
         _add_ruff_toml(version=settings.python_version)
@@ -370,7 +383,9 @@ def _add_pre_commit(
 def _add_pyproject_toml(
     *,
     version: str = _SETTINGS.python_version,
+    project__description: str | None = _SETTINGS.pyproject__project__description,
     project__name: str | None = _SETTINGS.pyproject__project__name,
+    project__readme: bool = _SETTINGS.readme,
     project__optional_dependencies__scripts: bool = _SETTINGS.pyproject__project__optional_dependencies__scripts,
     tool__uv__indexes: list[tuple[str, str]] = _SETTINGS.pyproject__tool__uv__indexes,
 ) -> None:
@@ -380,8 +395,13 @@ def _add_pyproject_toml(
         build_system["requires"] = ["uv_build"]
         project = _get_table(doc, "project")
         project["requires-python"] = f">= {version}"
+        if project__description is not None:
+            project["description"] = project__description
         if project__name is not None:
             project["name"] = project__name
+        if project__readme:
+            project["readme"] = "README.md"
+        project.setdefault("version", "0.1.0")
         dependency_groups = _get_table(doc, "dependency-groups")
         dev = _get_array(dependency_groups, "dev")
         _ensure_contains(dev, "dycw-utilities[test]")
@@ -487,6 +507,19 @@ def _add_pytest_toml(
             _ensure_contains(testpaths_list, *test_paths)
         if timeout is not None:
             pytest["timeout"] = str(timeout)
+
+
+def _add_readme_md(
+    *,
+    name: str | None = _SETTINGS.pyproject__project__name,
+    description: str | None = _SETTINGS.pyproject__project__description,
+) -> None:
+    text = f"""\
+# `{name}`
+
+{description}
+"""
+    _ = Path("README.md").write_text(text)
 
 
 def _add_ruff_toml(*, version: str = _SETTINGS.python_version) -> None:
