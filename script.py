@@ -310,7 +310,7 @@ def _add_github_push_yaml(
             steps = _get_list(tag_dict, "steps")
             steps_dict = _ensure_contains_partial(
                 steps,
-                {"name": "Tag latest commit", "uses": "dycw/action-tag-commit@latest"},
+                {"name": "Tag latest commit", "uses": "dycw/action-tag@latest"},
                 extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
             )
             if tag__major_minor:
