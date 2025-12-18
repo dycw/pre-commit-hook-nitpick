@@ -38,7 +38,7 @@ from utilities.functions import ensure_class
 from utilities.iterables import OneEmptyError, OneNonUniqueError, one
 from utilities.logging import basic_config
 from utilities.pathlib import get_repo_root
-from utilities.tempfile import TemporaryDirectory, TemporaryFile
+from utilities.tempfile import TemporaryFile
 from utilities.version import ParseVersionError, Version, parse_version
 from utilities.whenever import HOUR, get_now
 from whenever import ZonedDateTime
@@ -882,8 +882,9 @@ def _yield_text_file(path: PathLike, /) -> Iterator[Path]:
 
     def run(verb: str, temp: Path, /) -> None:
         _LOGGER.info("%s '%s'...", verb, path)
+        text = temp.read_text().rstrip("\n") + "\n"
         with writer(path, overwrite=True) as writer_temp:
-            _ = writer_temp.write_text(temp.read_text())
+            _ = writer_temp.write_text(text)
         _ = _MODIFIED.set(True)
 
     try:
@@ -895,7 +896,7 @@ def _yield_text_file(path: PathLike, /) -> Iterator[Path]:
     else:
         with TemporaryFile() as temp:
             yield temp
-            if temp.read_text() != current:
+            if temp.read_text().rstrip("\n") != current.rstrip("\n"):
                 run("Writing", temp)
 
 
