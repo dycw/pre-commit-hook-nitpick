@@ -99,6 +99,9 @@ class Settings:
         default=None, help="Set up '.pre-commit-config.yaml' uv lock script"
     )
     pyproject: bool = option(default=False, help="Set up 'pyproject.toml'")
+    pyproject__project__description: str | None = option(
+        default=None, help="Set up 'pyproject.toml' [project.description]"
+    )
     pyproject__project__name: str | None = option(
         default=None, help="Set up 'pyproject.toml' [project.name]"
     )
@@ -170,12 +173,14 @@ def main(settings: Settings, /) -> None:
         )
     if (
         settings.pyproject
+        or (settings.pyproject__project__description is not None)
         or (settings.pyproject__project__name is not None)
         or settings.pyproject__project__optional_dependencies__scripts
         or (len(settings.pyproject__tool__uv__indexes) >= 1)
     ):
         _add_pyproject_toml(
             version=settings.python_version,
+            project__description=settings.pyproject__project__description,
             project__name=settings.pyproject__project__name,
             project__optional_dependencies__scripts=settings.pyproject__project__optional_dependencies__scripts,
             tool__uv__indexes=settings.pyproject__tool__uv__indexes,
@@ -370,6 +375,7 @@ def _add_pre_commit(
 def _add_pyproject_toml(
     *,
     version: str = _SETTINGS.python_version,
+    project__description: str | None = _SETTINGS.pyproject__project__description,
     project__name: str | None = _SETTINGS.pyproject__project__name,
     project__optional_dependencies__scripts: bool = _SETTINGS.pyproject__project__optional_dependencies__scripts,
     tool__uv__indexes: list[tuple[str, str]] = _SETTINGS.pyproject__tool__uv__indexes,
@@ -380,8 +386,11 @@ def _add_pyproject_toml(
         build_system["requires"] = ["uv_build"]
         project = _get_table(doc, "project")
         project["requires-python"] = f">= {version}"
+        if project__description is not None:
+            project["description"] = project__description
         if project__name is not None:
             project["name"] = project__name
+        project.setdefault("version", "0.1.0")
         dependency_groups = _get_table(doc, "dependency-groups")
         dev = _get_array(dependency_groups, "dev")
         _ensure_contains(dev, "dycw-utilities[test]")
