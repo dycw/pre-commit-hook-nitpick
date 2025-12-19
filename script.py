@@ -148,6 +148,7 @@ _SETTINGS = Settings()
 @command(**CONTEXT_SETTINGS)
 @click_options(Settings, [EnvLoader("")], show_envvars_in_help=True)
 def main(settings: Settings, /) -> None:
+    _LOGGER.info("Running with settings:\n%s", pretty_repr(settings))
     if settings.dry_run:
         _LOGGER.info("Dry run; exiting...")
         return
