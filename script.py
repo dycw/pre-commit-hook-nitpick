@@ -18,9 +18,10 @@ import json
 import sys
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
+from itertools import product
 from logging import getLogger
 from pathlib import Path
-from re import escape, search
+from re import MULTILINE, escape, search, sub
 from string import Template
 from subprocess import CalledProcessError, check_call, check_output
 from typing import TYPE_CHECKING, Any, Literal, assert_never
@@ -160,6 +161,7 @@ def main(settings: Settings, /) -> None:
     _check_versions()
     _run_bump_my_version()
     _run_pre_commit_update()
+    _update_action_versions()
     _add_pre_commit(
         dockerfmt=settings.pre_commit__dockerfmt,
         prettier=settings.pre_commit__prettier,
@@ -864,6 +866,29 @@ def _set_version(version: Version, /) -> None:
         str(version),
         ".bumpversion.toml",
     ])
+
+
+def _update_action_versions() -> None:
+    try:
+        paths = list(Path(".github").rglob("**/*.yaml"))
+    except FileNotFoundError:
+        return
+    versions = {
+        "actions/checkout": "v6",
+        "actions/setup-python": "v6",
+        "astral-sh/ruff-action": "v3",
+        "astral-sh/setup-uv": "v7",
+    }
+    for path, (action, version) in product(paths, versions.items()):
+        text = sub(
+            rf"^(\s*uses: {action})@.+$",
+            rf"\1@{version}",
+            path.read_text(),
+            flags=MULTILINE,
+        )
+        with _yield_yaml_dict(path) as dict_:
+            dict_.clear()
+            dict_.update(yaml.safe_load(text))
 
 
 @contextmanager
