@@ -153,7 +153,6 @@ def main(settings: Settings, /) -> None:
     if settings.dry_run:
         _LOGGER.info("Dry run; exiting...")
         return
-    _LOGGER.info("Running...")
     _add_bumpversion_toml(
         pyproject=settings.pyproject,
         python_package_name_use=settings.python_package_name_use,
