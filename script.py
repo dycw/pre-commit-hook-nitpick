@@ -157,6 +157,9 @@ class Settings:
     readme: bool = option(default=False, help="Set up 'README.md'")
     repo_name: str | None = option(default=None, help="Repo name")
     ruff: bool = option(default=False, help="Set up 'ruff.toml'")
+    script: str | None = option(
+        default=None, help="Set up a script instead of a package"
+    )
     dry_run: bool = option(default=False, help="Dry run the CLI")
 
     @property
@@ -195,7 +198,7 @@ def main(settings: Settings, /) -> None:
         shell=settings.pre_commit__shell,
         taplo=settings.pre_commit__taplo,
         uv=settings.pre_commit__uv,
-        uv__script=settings.pre_commit__uv__script,
+        uv__script=settings.script,
     )
     if settings.coverage:
         _add_coveragerc_toml()
