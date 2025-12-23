@@ -863,7 +863,9 @@ def _run_pre_commit_update() -> None:
 
 def _run_ripgrep_and_sd(*, version: str = _SETTINGS.python_version) -> None:
     pattern = rf'# requires-python = ">=(?!{version})\d+\.\d+"'
-    files = run("rg", "--files-with-matches", pattern, return_=True).splitlines()
+    files = run(
+        "rg", "--files-with-matches", "--pcre2", (pattern), return_=True
+    ).splitlines()
     paths = list(map(Path, files))
     for path in paths:
         with _yield_text_file(path) as temp:
