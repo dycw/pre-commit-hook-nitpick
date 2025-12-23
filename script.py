@@ -22,7 +22,6 @@ from itertools import product
 from logging import getLogger
 from pathlib import Path
 from re import MULTILINE, escape, search, sub
-from shutil import copyfile
 from string import Template
 from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, Any, Literal, assert_never
@@ -996,13 +995,13 @@ def _run_ripgrep_and_sd(*, version: str = _SETTINGS.python_version) -> None:
     paths = list(map(Path, files))
     for path in paths:
         with _yield_text_file(path) as temp:
-            _ = copyfile(path, temp)
-            run(
-                "sd",
+            text = sub(
                 r'# requires-python = ">=\d+\.\d+"',
                 rf'# requires-python = ">={version}"',
-                str(temp),
+                path.read_text(),
+                flags=MULTILINE,
             )
+            _ = temp.write_text(text)
 
 
 def _set_version(version: Version, /) -> None:
