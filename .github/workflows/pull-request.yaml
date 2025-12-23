@@ -1,0 +1,29 @@
+jobs:
+  pytest:
+    name:
+      pytest (${{ matrix.os }}, ${{ matrix.python-version }}, ${{ matrix.resolution
+      }})
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Run pytest
+        uses: dycw/action-pytest@latest
+        with:
+          python-version: ${{ matrix.python-version }}
+          resolution: ${{ matrix.resolution }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.13"
+        resolution:
+          - highest
+name: pull-request
+"on":
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - "cron: 0 0 * * *"
