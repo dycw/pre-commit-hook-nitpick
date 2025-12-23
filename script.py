@@ -334,6 +334,8 @@ def _add_github_pull_request_yaml(
         pull_request = _get_dict(on, "pull_request")
         branches = _get_list(pull_request, "branches")
         _ensure_contains(branches, "master")
+        schedule = _get_list(on, "schedule")
+        _ensure_contains(schedule, "cron: 0 0 * * *")
         jobs = _get_dict(dict_, "jobs")
         if (
             pytest__os__windows
