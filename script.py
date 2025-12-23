@@ -66,6 +66,26 @@ _MODIFIED = ContextVar("modified", default=False)
 class Settings:
     coverage: bool = option(default=False, help="Set up '.coveragerc.toml'")
     description: str | None = option(default=None, help="Repo description")
+    github__pull_request__pytest__os__windows: bool = option(
+        default=False, help="Set up 'pull-request.yaml' pytest with Windows"
+    )
+    github__pull_request__pytest__os__macos: bool = option(
+        default=False, help="Set up 'pull-request.yaml' pytest with MacOS"
+    )
+    github__pull_request__pytest__os__ubuntu: bool = option(
+        default=False, help="Set up 'pull-request.yaml' pytest with Ubuntu"
+    )
+    github__pull_request__pytest__resolution__highest: bool = option(
+        default=False,
+        help="Set up 'pull-request.yaml' pytest with the highest resolution",
+    )
+    github__pull_request__pytest__resolution__lowest_direct: bool = option(
+        default=False,
+        help="Set up 'pull-request.yaml' pytest with the lowest-direct resolution",
+    )
+    github__push__tag__latest: bool = option(
+        default=False, help="Set up 'push.yaml' tagging"
+    )
     github__push__publish: bool = option(
         default=False, help="Set up 'push.yaml' publishing"
     )
@@ -78,9 +98,6 @@ class Settings:
     )
     github__push__tag__major: bool = option(
         default=False, help="Set up 'push.yaml' with the 'major' tag"
-    )
-    github__push__tag__latest: bool = option(
-        default=False, help="Set up 'push.yaml' with the 'latest' tag"
     )
     package_name: str | None = option(default=None, help="Package name")
     pre_commit__dockerfmt: bool = option(
@@ -176,6 +193,18 @@ def main(settings: Settings, /) -> None:
     )
     if settings.coverage:
         _add_coveragerc_toml()
+    if (
+        settings.github__pull_request__pytest__resolution__highest
+        or settings.github__pull_request__pytest__resolution__lowest_direct
+    ):
+        _add_github_pull_request_yaml(
+            pytest__os__windows=settings.github__pull_request__pytest__os__windows,
+            pytest__os__mac=settings.github__pull_request__pytest__os__mac,
+            pytest__os__ubuntu=settings.github__pull_request__pytest__os__ubuntu,
+            pytest__resolution__highest=settings.github__pull_request__pytest__resolution__highest,
+            pytest__resolution__lowest_direct=settings.github__pull_request__pytest__resolution__lowest_direct,
+            pytest__timeout=settings.pytest__timeout,
+        )
     if (
         settings.github__push__publish
         or settings.github__push__publish__trusted_publishing
@@ -273,6 +302,24 @@ def _add_coveragerc_toml() -> None:
         run["branch"] = True
         run["data_file"] = ".coverage/data"
         run["parallel"] = True
+
+
+def _add_github_pull_request_yaml(
+    *,
+    pytest__resolution__highest: bool = _SETTINGS.github__pull_request__pytest__resolution__highest,
+    pytest__resolution__lowest_direct: bool = _SETTINGS.github__pull_request__pytest__resolution__lowest_direct,
+    pytest__timeout: int | None = _SETTINGS.pytest__timeout,
+) -> None:
+    with _yield_yaml_dict(".github/workflows/pull-request.yaml") as dict_:
+        dict_["name"]
+        on = _get_dict(dict_, "on")
+        pull_request = _get_dict(on, "pull_request")
+        branches = _get_list(pull_request, "branches")
+        _ensure_contains(branches, "master")
+        jobs = _get_dict(dict_, "jobs")
+        if tag__major_minor:
+            with_ = _get_dict(steps_dict, "with")
+            with_["major-minor"] = True
 
 
 def _add_github_push_yaml(
