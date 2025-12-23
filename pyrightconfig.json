@@ -1,7 +1,9 @@
 {
   "deprecateTypingAliases": true,
   "enableReachabilityAnalysis": false,
-  "include": "script.py",
+  "include": [
+    "script.py"
+  ],
   "pythonVersion": "3.13",
   "reportCallInDefaultInitializer": true,
   "reportImplicitOverride": true,

@@ -394,7 +394,12 @@ def _add_github_pull_request_yaml(
             ruff_dict["runs-on"] = "ubuntu-latest"
             steps = _get_list(ruff_dict, "steps")
             _ensure_contains(
-                steps, {"name": "Run 'ruff'", "uses": "dycw/action-ruff@latest"}
+                steps,
+                {
+                    "name": "Run 'ruff'",
+                    "uses": "dycw/action-ruff@latest",
+                    "with": {"token": "${{ secrets.GITHUB_TOKEN }}"},
+                },
             )
 
 
