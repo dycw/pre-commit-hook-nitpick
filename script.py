@@ -354,7 +354,7 @@ def _add_github_pull_request_yaml(
             steps = _get_list(pytest_dict, "steps")
             _ = _ensure_contains_partial(
                 steps,
-                {"name": "Run pytest", "uses": "dycw/action-pytest@latest"},
+                {"name": "Run 'pytest'", "uses": "dycw/action-pytest@latest"},
                 extra={
                     "with": {
                         "token": "${{ secrets.GITHUB_TOKEN }}",
