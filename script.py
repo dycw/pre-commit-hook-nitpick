@@ -141,9 +141,6 @@ class Settings:
     pytest__ignore_warnings: bool = option(
         default=False, help="Set up 'pytest.toml' filterwarnings"
     )
-    pytest__test_paths: list[str] = option(
-        factory=list, help="Set up 'pytest.toml' testpaths"
-    )
     pytest__timeout: int | None = option(
         default=None, help="Set up 'pytest.toml' timeout"
     )
@@ -256,16 +253,15 @@ def main(settings: Settings, /) -> None:
         settings.pytest
         or settings.pytest__asyncio
         or settings.pytest__ignore_warnings
-        or (len(settings.pytest__test_paths) >= 1)
         or (settings.pytest__timeout is not None)
     ):
         _add_pytest_toml(
             asyncio=settings.pytest__asyncio,
             ignore_warnings=settings.pytest__ignore_warnings,
-            test_paths=settings.pytest__test_paths,
             timeout=settings.pytest__timeout,
             coverage=settings.coverage,
             python_package_name=settings.python_package_name_use,
+            script=settings.script,
         )
     if settings.readme:
         _add_readme_md(name=settings.repo_name, description=settings.description)
@@ -618,10 +614,10 @@ def _add_pytest_toml(
     *,
     asyncio: bool = _SETTINGS.pytest__asyncio,
     ignore_warnings: bool = _SETTINGS.pytest__ignore_warnings,
-    test_paths: list[str] = _SETTINGS.pytest__test_paths,
     timeout: int | None = _SETTINGS.pytest__timeout,
     coverage: bool = _SETTINGS.coverage,
     python_package_name: str | None = _SETTINGS.python_package_name_use,
+    script: str | None = _SETTINGS.script,
 ) -> None:
     with _yield_toml_doc("pytest.toml") as doc:
         pytest = _get_table(doc, "pytest")
@@ -647,6 +643,8 @@ def _add_pytest_toml(
         _ensure_contains(filterwarnings, "error")
         pytest["minversion"] = "9.0"
         pytest["strict"] = True
+        testpaths = _get_array(pytest, "testpaths")
+        _ensure_contains(testpaths, "src/tests" if script is None else "tests")
         pytest["xfail_strict"] = True
         if asyncio:
             pytest["asyncio_default_fixture_loop_scope"] = "function"
@@ -659,9 +657,6 @@ def _add_pytest_toml(
                 "ignore::ResourceWarning",
                 "ignore::RuntimeWarning",
             )
-        if len(test_paths) >= 1:
-            testpaths_list = _get_array(pytest, "testpaths")
-            _ensure_contains(testpaths_list, *test_paths)
         if timeout is not None:
             pytest["timeout"] = str(timeout)
 
