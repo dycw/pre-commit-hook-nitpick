@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #   "click >= 8.3.1, < 8.4",
-#   "dycw-utilities >= 0.172.3, < 0.173",
+#   "dycw-utilities >= 0.172.6, < 0.173",
 #   "pytest-xdist >= 3.8.0, < 3.9",
 #   "pyyaml >= 6.0.3, < 6.1",
 #   "rich >= 14.2.0, < 14.3",
@@ -599,7 +599,7 @@ def _add_pyrightconfig_json(
     with _yield_json_dict("pyrightconfig.json") as dict_:
         dict_["deprecateTypingAliases"] = True
         dict_["enableReachabilityAnalysis"] = False
-        dict_["include"] = "src" if script is None else script
+        dict_["include"] = ["src" if script is None else script]
         dict_["pythonVersion"] = version
         dict_["reportCallInDefaultInitializer"] = True
         dict_["reportImplicitOverride"] = True

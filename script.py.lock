@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 [manifest]
 requirements = [
     { name = "click", specifier = ">=8.3.1,<8.4" },
-    { name = "dycw-utilities", specifier = ">=0.172.3,<0.173" },
+    { name = "dycw-utilities", specifier = ">=0.172.6,<0.173" },
     { name = "pytest-xdist", specifier = ">=3.8.0,<3.9" },
     { name = "pyyaml", specifier = ">=6.0.3,<6.1" },
     { name = "rich", specifier = ">=14.2.0,<14.3" },
@@ -52,7 +52,7 @@ wheels = [
 
 [[package]]
 name = "dycw-utilities"
-version = "0.172.5"
+version = "0.172.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "atomicwrites" },
@@ -60,9 +60,9 @@ dependencies = [
     { name = "tzlocal" },
     { name = "whenever" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f5/2a/661e344447d287091758f4d1cd37f0d0c9e3cea7c772c3c58fc5efc69b25/dycw_utilities-0.172.5.tar.gz", hash = "sha256:792df14d9066e094424db260f899f950b22a4e2283423c9c1f11260b006c80b5", size = 162818, upload-time = "2025-12-22T01:46:04.825Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/9a/899407cdb622f23a33c877c872a9d404215a3c87870bc92f547377dca7e3/dycw_utilities-0.172.6.tar.gz", hash = "sha256:73e8bbdf242a36a98931433277822c1e7b65278273608388d7fcffada94f50af", size = 163066, upload-time = "2025-12-23T23:26:38.239Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/98/401e61e9dab2530dbe44e638ee59b4a15b553d0496b0fc45f40e09bef872/dycw_utilities-0.172.5-py3-none-any.whl", hash = "sha256:77e4dec4a1a278e119799ad320d803eda2c8e039fcd499fc471097e6766303c4", size = 196912, upload-time = "2025-12-22T01:46:06.536Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/66/e0f507542e1bac886e49b67c5b7c4f599649f32e3318fdc4d51e79047c14/dycw_utilities-0.172.6-py3-none-any.whl", hash = "sha256:8f7e9f7a914a6c164adfe6220a080a1b6acf0b04e378d4d72a07f4222be55f98", size = 197181, upload-time = "2025-12-23T23:26:36.175Z" },
 ]
 
 [[package]]
