@@ -382,7 +382,7 @@ def _add_github_pull_request_yaml(
             if pytest__resolution__highest:
                 _ensure_contains(resolution, "highest")
             if pytest__resolution__lowest_direct:
-                _ensure_contains(resolution, "lowest_direct")
+                _ensure_contains(resolution, "lowest-direct")
             if pytest__timeout is not None:
                 pytest_dict["timeout-minutes"] = max(round(pytest__timeout / 60), 1)
 
