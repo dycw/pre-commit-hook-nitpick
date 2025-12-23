@@ -67,7 +67,7 @@ class Settings:
     coverage: bool = option(default=False, help="Set up '.coveragerc.toml'")
     description: str | None = option(default=None, help="Repo description")
     github__pull_request__pytest__os__windows: bool = option(
-        default=True, help="Set up 'pull-request.yaml' pytest with Windows"
+        default=False, help="Set up 'pull-request.yaml' pytest with Windows"
     )
     github__pull_request__pytest__os__macos: bool = option(
         default=False, help="Set up 'pull-request.yaml' pytest with MacOS"
@@ -79,14 +79,14 @@ class Settings:
         default=False, help="Set up 'pull-request.yaml' pytest with Python 3.13"
     )
     github__pull_request__pytest__python_version__3_14: bool = option(
-        default=True, help="Set up 'pull-request.yaml' pytest with Python 3.14"
+        default=False, help="Set up 'pull-request.yaml' pytest with Python 3.14"
     )
     github__pull_request__pytest__resolution__highest: bool = option(
-        default=True,
+        default=False,
         help="Set up 'pull-request.yaml' pytest with the highest resolution",
     )
     github__pull_request__pytest__resolution__lowest_direct: bool = option(
-        default=True,
+        default=False,
         help="Set up 'pull-request.yaml' pytest with the lowest-direct resolution",
     )
     github__push__tag__latest: bool = option(
