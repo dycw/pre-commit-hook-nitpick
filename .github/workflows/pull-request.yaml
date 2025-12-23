@@ -5,21 +5,37 @@ jobs:
       }})
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Run pytest
-        uses: dycw/action-pytest@latest
+      # - name: Run pytest
+      #   uses: dycw/action-pytest@latest
+      #   with:
+      #     python-version: ${{ matrix.python-version }}
+      #     resolution: ${{ matrix.resolution }}
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check out repo
+        uses: actions/checkout@v6
         with:
-          python-version: ${{ matrix.python-version }}
-          resolution: ${{ matrix.resolution }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-        python-version:
-          - "3.13"
-        resolution:
-          - highest
+          fetch-depth: 0
+
+      - name: Install 'uv'
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Run 'pytest'
+        env:
+          UV_RESOLUTION: ${{ inputs.resolution }}
+          UV_PRERELEASE: ${{ inputs.prerelease }}
+        run: uv run --with pytest --with pytest-xdist pytest
+        shell: bash
+      strategy:
+        fail-fast: false
+        matrix:
+          os:
+            - ubuntu-latest
+          python-version:
+            - "3.13"
+          resolution:
+            - highest
 name: pull-request
 "on":
   pull_request:
