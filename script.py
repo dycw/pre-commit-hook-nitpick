@@ -65,6 +65,9 @@ _MODIFIED = ContextVar("modified", default=False)
 class Settings:
     coverage: bool = option(default=False, help="Set up '.coveragerc.toml'")
     description: str | None = option(default=None, help="Repo description")
+    github__pull_request__pyright: bool = option(
+        default=False, help="Set up 'pull-request.yaml' pyright"
+    )
     github__pull_request__pytest__os__windows: bool = option(
         default=False, help="Set up 'pull-request.yaml' pytest with Windows"
     )
@@ -199,7 +202,8 @@ def main(settings: Settings, /) -> None:
     if settings.coverage:
         _add_coveragerc_toml()
     if (
-        settings.github__pull_request__pytest__os__windows
+        settings.github__pull_request__pyright
+        or settings.github__pull_request__pytest__os__windows
         or settings.github__pull_request__pytest__os__macos
         or settings.github__pull_request__pytest__os__ubuntu
         or settings.github__pull_request__pytest__python_version__3_13
@@ -209,6 +213,7 @@ def main(settings: Settings, /) -> None:
         or settings.github__pull_request__ruff
     ):
         _add_github_pull_request_yaml(
+            pyright=settings.github__pull_request__pyright,
             pytest__os__windows=settings.github__pull_request__pytest__os__windows,
             pytest__os__macos=settings.github__pull_request__pytest__os__macos,
             pytest__os__ubuntu=settings.github__pull_request__pytest__os__ubuntu,
@@ -217,6 +222,7 @@ def main(settings: Settings, /) -> None:
             pytest__resolution__highest=settings.github__pull_request__pytest__resolution__highest,
             pytest__resolution__lowest_direct=settings.github__pull_request__pytest__resolution__lowest_direct,
             pytest__timeout=settings.pytest__timeout,
+            python_version=settings.python_version,
             ruff=settings.ruff,
             script=settings.script,
         )
@@ -318,6 +324,7 @@ def _add_coveragerc_toml() -> None:
 
 def _add_github_pull_request_yaml(
     *,
+    pyright: bool = _SETTINGS.github__pull_request__pyright,
     pytest__os__windows: bool = _SETTINGS.github__pull_request__pytest__os__windows,
     pytest__os__macos: bool = _SETTINGS.github__pull_request__pytest__os__macos,
     pytest__os__ubuntu: bool = _SETTINGS.github__pull_request__pytest__os__ubuntu,
@@ -326,6 +333,7 @@ def _add_github_pull_request_yaml(
     pytest__resolution__highest: bool = _SETTINGS.github__pull_request__pytest__resolution__highest,
     pytest__resolution__lowest_direct: bool = _SETTINGS.github__pull_request__pytest__resolution__lowest_direct,
     pytest__timeout: int | None = _SETTINGS.pytest__timeout,
+    python_version: str = _SETTINGS.python_version,
     ruff: bool = _SETTINGS.github__pull_request__ruff,
     script: str | None = _SETTINGS.script,
 ) -> None:
@@ -338,6 +346,23 @@ def _add_github_pull_request_yaml(
         schedule = _get_list(on, "schedule")
         _ensure_contains(schedule, {"cron": "0 0 * * *"})
         jobs = _get_dict(dict_, "jobs")
+        if pyright:
+            pyright_dict = _get_dict(jobs, "pyright")
+            pyright_dict["runs-on"] = "ubuntu-latest"
+            steps = _get_list(pyright_dict, "steps")
+            steps_dict = _ensure_contains_partial(
+                steps,
+                {"name": "Run 'pyright'", "uses": "dycw/action-pyright@latest"},
+                extra={
+                    "with": {
+                        "token": "${{ secrets.GITHUB_TOKEN }}",
+                        "python-version": python_version,
+                    }
+                },
+            )
+            if script is not None:
+                with_ = _get_dict(steps_dict, "with")
+                with_["with-requirements"] = script
         if (
             pytest__os__windows
             or pytest__os__macos
@@ -377,11 +402,11 @@ def _add_github_pull_request_yaml(
                 _ensure_contains(os, "macos-latest")
             if pytest__os__ubuntu:
                 _ensure_contains(os, "ubuntu-latest")
-            python_version = _get_list(matrix, "python-version")
+            python_version_dict = _get_list(matrix, "python-version")
             if pytest__python_version__3_13:
-                _ensure_contains(python_version, "3.13")
+                _ensure_contains(python_version_dict, "3.13")
             if pytest__python_version__3_14:
-                _ensure_contains(python_version, "3.14")
+                _ensure_contains(python_version_dict, "3.14")
             resolution = _get_list(matrix, "resolution")
             if pytest__resolution__highest:
                 _ensure_contains(resolution, "highest")
