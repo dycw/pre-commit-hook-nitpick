@@ -23,7 +23,7 @@ jobs:
         uses: dycw/action-pyright@latest
         with:
           token: ${{secrets.GITHUB_TOKEN}}
-          python-version: "3.13"
+          python-version: "3.12"
           with-requirements: script.py
   pytest:
     env:
@@ -46,7 +46,6 @@ jobs:
           - macos-latest
           - ubuntu-latest
         python-version:
-          - "3.13"
           - "3.12"
         resolution:
           - highest
