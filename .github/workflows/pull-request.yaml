@@ -12,7 +12,7 @@ jobs:
       - name: Run 'pre-commit'
         uses: dycw/action-pre-commit@latest
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{secrets.GITHUB_TOKEN}}
           repos: |-
             dycw/pre-commit-hook-nitpick
             pre-commit/pre-commit-hooks
@@ -22,22 +22,22 @@ jobs:
       - name: Run 'pyright'
         uses: dycw/action-pyright@latest
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{secrets.GITHUB_TOKEN}}
           python-version: "3.13"
           with-requirements: script.py
   pytest:
     env:
       CI: "1"
-    name: pytest (${{ matrix.os }}, ${{ matrix.python-version }}, ${{
-      matrix.resolution }})
-    runs-on: ${{ matrix.os }}
+    name: pytest (${{matrix.os}}, ${{matrix.python-version}},
+      ${{matrix.resolution}})
+    runs-on: ${{matrix.os}}
     steps:
       - name: Run 'pytest'
         uses: dycw/action-pytest@latest
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          python-version: ${{ matrix.python-version }}
-          resolution: ${{ matrix.resolution }}
+          token: ${{secrets.GITHUB_TOKEN}}
+          python-version: ${{matrix.python-version}}
+          resolution: ${{matrix.resolution}}
           with-requirements: script.py
     strategy:
       fail-fast: false
@@ -55,4 +55,4 @@ jobs:
       - name: Run 'ruff'
         uses: dycw/action-ruff@latest
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{secrets.GITHUB_TOKEN}}

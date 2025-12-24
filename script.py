@@ -61,10 +61,14 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.4"
+__version__ = "0.7.5"
+_BUMPVERSION_TOML = Path(".bumpversion.toml")
+_COVERAGERC_TOML = Path(".coveragerc.toml")
 _LOADER = EnvLoader("")
 _LOGGER = getLogger(__name__)
-_MODIFICATIONS: set[str] = set()
+_MODIFICATIONS: set[Path] = set()
+_PYPROJECT_TOML = Path("pyproject.toml")
+_PRE_COMMIT_CONFIG = Path(".pre-commit-config.yaml")
 _YAML = YAML()
 
 
@@ -321,8 +325,7 @@ def _add_bumpversion_toml(
         if pyproject:
             files = _get_aot(bumpversion, "files")
             _ensure_aot_contains(
-                files,
-                _bumpversion_toml_file("pyproject.toml", 'version = "${version}"'),
+                files, _bumpversion_toml_file(_PYPROJECT_TOML, 'version = "${version}"')
             )
         if python_package_name_use is not None:
             files = _get_aot(bumpversion, "files")
@@ -336,7 +339,7 @@ def _add_bumpversion_toml(
 
 
 def _add_coveragerc_toml() -> None:
-    with _yield_toml_doc(".coveragerc.toml") as doc:
+    with _yield_toml_doc(_COVERAGERC_TOML) as doc:
         html = _get_table(doc, "html")
         html["directory"] = ".coverage/html"
         report = _get_table(doc, "report")
@@ -548,7 +551,7 @@ def _add_pre_commit(
     uv: bool = _SETTINGS.pre_commit__uv,
     script: str | None = _SETTINGS.script,
 ) -> None:
-    with _yield_yaml_dict(".pre-commit-config.yaml") as dict_:
+    with _yield_yaml_dict(_PRE_COMMIT_CONFIG) as dict_:
         _ensure_pre_commit_repo(
             dict_, "https://github.com/dycw/pre-commit-hook-nitpick", "nitpick"
         )
@@ -639,7 +642,7 @@ def _add_pyproject_toml(
     python_package_name_use: str | None = _SETTINGS.python_package_name_use,
     tool__uv__indexes: list[tuple[str, str]] = _SETTINGS.pyproject__tool__uv__indexes,
 ) -> None:
-    with _yield_toml_doc("pyproject.toml") as doc:
+    with _yield_toml_doc(_PYPROJECT_TOML) as doc:
         build_system = _get_table(doc, "build-system")
         build_system["build-backend"] = "uv_build"
         build_system["requires"] = ["uv_build"]
@@ -733,7 +736,7 @@ def _add_pytest_toml(
             _ensure_contains(
                 addopts,
                 f"--cov={python_package_name}",
-                "--cov-config=.coveragerc.toml",
+                f"--cov-config={_COVERAGERC_TOML}",
                 "--cov-report=html",
             )
         pytest["collect_imported_tests"] = False
@@ -1010,7 +1013,7 @@ def _get_version_from_bump_toml(*, obj: TOMLDocument | str | None = None) -> Ver
 
 
 def _get_version_from_git_show() -> Version:
-    text = run("git", "show", "origin/master:.bumpversion.toml", return_=True)
+    text = run("git", "show", f"origin/master:{_BUMPVERSION_TOML}", return_=True)
     return _get_version_from_bump_toml(obj=text.rstrip("\n"))
 
 
@@ -1030,7 +1033,7 @@ def _run_bump_my_version() -> None:
     def run_set_version(version: Version, /) -> None:
         _LOGGER.info("Setting version to %s...", version)
         _set_version(version)
-        _MODIFICATIONS.add(".bumpversion.toml")
+        _MODIFICATIONS.add(_BUMPVERSION_TOML)
 
     try:
         prev = _get_version_from_git_tag()
@@ -1046,16 +1049,15 @@ def _run_bump_my_version() -> None:
 
 
 def _run_pre_commit_update() -> None:
-    pre_commit_config = Path(".pre-commit-config.yaml")
     cache = xdg_cache_home() / "pre-commit-hook-nitpick" / get_repo_root().name
 
     def run_autoupdate() -> None:
-        current = pre_commit_config.read_text()
+        current = _PRE_COMMIT_CONFIG.read_text()
         run("pre-commit", "autoupdate", print=True)
         with writer(cache, overwrite=True) as temp:
             _ = temp.write_text(get_now().format_iso())
-        if pre_commit_config.read_text() != current:
-            _MODIFICATIONS.add(str(pre_commit_config))
+        if _PRE_COMMIT_CONFIG.read_text() != current:
+            _MODIFICATIONS.add(_PRE_COMMIT_CONFIG)
 
     try:
         text = cache.read_text()
@@ -1094,7 +1096,11 @@ def _run_ripgrep_and_sd(*, version: str = _SETTINGS.python_version) -> None:
 
 def _set_version(version: Version, /) -> None:
     run(
-        "bump-my-version", "replace", "--new-version", str(version), ".bumpversion.toml"
+        "bump-my-version",
+        "replace",
+        "--new-version",
+        str(version),
+        str(_BUMPVERSION_TOML),
     )
 
 
@@ -1138,7 +1144,7 @@ def _write_path_and_modified(verb: str, src: PathLike, dest: PathLike, /) -> Non
     text = src.read_text().rstrip("\n") + "\n"
     with writer(dest, overwrite=True) as temp:
         _ = temp.write_text(text)
-    _MODIFICATIONS.add(str(dest))
+    _MODIFICATIONS.add(dest)
 
 
 def _yaml_dump(obj: Any, /) -> str:
