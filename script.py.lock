@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 [manifest]
 requirements = [
     { name = "click", specifier = ">=8.3.1,<8.4" },
-    { name = "dycw-utilities", specifier = ">=0.172.6,<0.173" },
+    { name = "dycw-utilities", specifier = ">=0.172.7,<0.173" },
     { name = "pyright" },
     { name = "pytest-xdist" },
     { name = "pyyaml", specifier = ">=6.0.3,<6.1" },
