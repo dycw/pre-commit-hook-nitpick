@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.2"
+__version__ = "0.7.3"
 _LOADER = EnvLoader("")
 _LOGGER = getLogger(__name__)
 _MODIFICATIONS: set[str] = set()
@@ -304,7 +304,7 @@ def _main(settings: Settings, /) -> None:
         _run_bump_my_version()
     if len(_MODIFICATIONS) >= 1:
         _LOGGER.info(
-            "Exiting due to modiciations: %s",
+            "Exiting due to modifications: %s",
             ", ".join(map(repr, sorted(_MODIFICATIONS))),
         )
         sys.exit(1)
