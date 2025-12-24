@@ -59,7 +59,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.6.20"
+__version__ = "0.6.21"
 _LOADER = EnvLoader("")
 _LOGGER = getLogger(__name__)
 _MODIFICATIONS: set[str] = set()
@@ -1104,6 +1104,15 @@ def _update_action_versions() -> None:
             dict_.update(yaml.safe_load(text))
 
 
+def _write_path_and_modified(verb: str, src: PathLike, dest: PathLike, /) -> None:
+    src, dest = map(Path, [src, dest])
+    _LOGGER.info("%s '%s'...", verb, dest)
+    text = src.read_text().rstrip("\n") + "\n"
+    with writer(dest, overwrite=True) as temp:
+        _ = temp.write_text(text)
+    _MODIFICATIONS.add(str(dest))
+
+
 @contextmanager
 def _yield_bumpversion_toml() -> Iterator[TOMLDocument]:
     with _yield_toml_doc(".bumpversion.toml") as doc:
@@ -1131,10 +1140,9 @@ def _yield_write_context[T](
     path = Path(path)
 
     def run_write(verb: str, data: T, /) -> None:
-        _LOGGER.info("%s '%s'...", verb, path)
         with writer(path, overwrite=True) as temp:
             _ = temp.write_text(dumps(data))
-        _MODIFICATIONS.add(str(path))
+            _write_path_and_modified(verb, temp, path)
 
     try:
         data = loads(path.read_text())
@@ -1158,24 +1166,17 @@ def _yield_yaml_dict(path: PathLike, /) -> Iterator[StrDict]:
 def _yield_text_file(path: PathLike, /) -> Iterator[Path]:
     path = Path(path)
 
-    def run_write(verb: str, temp: Path, /) -> None:
-        _LOGGER.info("%s '%s'...", verb, path)
-        text = temp.read_text().rstrip("\n") + "\n"
-        with writer(path, overwrite=True) as writer_temp:
-            _ = writer_temp.write_text(text)
-        _MODIFICATIONS.add(str(path))
-
     try:
         current = path.read_text()
     except FileNotFoundError:
         with TemporaryFile() as temp:
             yield temp
-            run_write("Writing", temp)
+            _write_path_and_modified("Writing", temp, path)
     else:
         with TemporaryFile() as temp:
             yield temp
             if temp.read_text().rstrip("\n") != current.rstrip("\n"):
-                run_write("Writing", temp)
+                _write_path_and_modified("Writing", temp, path)
 
 
 @contextmanager
