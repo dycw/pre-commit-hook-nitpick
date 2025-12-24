@@ -62,10 +62,10 @@ type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
 __version__ = "0.7.0"
-LOADER = EnvLoader("")
-LOGGER = getLogger(__name__)
-MODIFICATIONS: set[str] = set()
-YAML_INSTANCE = YAML()
+_LOADER = EnvLoader("")
+_LOGGER = getLogger(__name__)
+_MODIFICATIONS: set[str] = set()
+_YAML = YAML()
 
 
 @settings
@@ -183,16 +183,16 @@ class Settings:
         return None
 
 
-_SETTINGS = load_settings(Settings, [LOADER])
+_SETTINGS = load_settings(Settings, [_LOADER])
 
 
 @command(**CONTEXT_SETTINGS)
-@click_options(Settings, [LOADER], show_envvars_in_help=True)
+@click_options(Settings, [_LOADER], show_envvars_in_help=True)
 def _main(settings: Settings, /) -> None:
     if is_pytest():
         return
-    basic_config(obj=LOGGER)
-    LOGGER.info(
+    basic_config(obj=_LOGGER)
+    _LOGGER.info(
         strip_and_dedent("""
             Running 'pre-commit-hook-nitpick' (version %s) with settings:
             %s
@@ -302,10 +302,10 @@ def _main(settings: Settings, /) -> None:
         _add_ruff_toml(version=settings.python_version)
     if not settings.skip_version_bump:
         _run_bump_my_version()
-    if len(MODIFICATIONS) >= 1:
-        LOGGER.info(
+    if len(_MODIFICATIONS) >= 1:
+        _LOGGER.info(
             "Exiting due to modiciations: %s",
-            ", ".join(map(repr, sorted(MODIFICATIONS))),
+            ", ".join(map(repr, sorted(_MODIFICATIONS))),
         )
         sys.exit(1)
 
@@ -973,14 +973,14 @@ def _get_partial_dict(
         )
     except OneEmptyError:
         if not skip_log:
-            LOGGER.exception(
+            _LOGGER.exception(
                 "Expected %s to contain %s (as a partial)",
                 pretty_repr(iterable),
                 pretty_repr(dict_),
             )
         raise
     except OneNonUniqueError as error:
-        LOGGER.exception(
+        _LOGGER.exception(
             "Expected %s to contain %s uniquely (as a partial); got %s, %s and perhaps more",
             pretty_repr(iterable),
             pretty_repr(dict_),
@@ -1028,9 +1028,9 @@ def _run_bump_my_version() -> None:
         return
 
     def run_set_version(version: Version, /) -> None:
-        LOGGER.info("Setting version to %s...", version)
+        _LOGGER.info("Setting version to %s...", version)
         _set_version(version)
-        MODIFICATIONS.add(".bumpversion.toml")
+        _MODIFICATIONS.add(".bumpversion.toml")
 
     try:
         prev = _get_version_from_git_tag()
@@ -1055,7 +1055,7 @@ def _run_pre_commit_update() -> None:
         with writer(cache, overwrite=True) as temp:
             _ = temp.write_text(get_now().format_iso())
         if pre_commit_config.read_text() != current:
-            MODIFICATIONS.add(str(pre_commit_config))
+            _MODIFICATIONS.add(str(pre_commit_config))
 
     try:
         text = cache.read_text()
@@ -1105,7 +1105,7 @@ def _update_action_file_extensions() -> None:
         return
     for path in paths:
         new = path.with_suffix(".yaml")
-        LOGGER.info("Renaming '%s' -> '%s'...", path, new)
+        _LOGGER.info("Renaming '%s' -> '%s'...", path, new)
         _ = path.rename(new)
 
 
@@ -1129,21 +1129,21 @@ def _update_action_versions() -> None:
         )
         with _yield_yaml_dict(path) as dict_:
             dict_.clear()
-            dict_.update(YAML_INSTANCE.load(text))
+            dict_.update(_YAML.load(text))
 
 
 def _write_path_and_modified(verb: str, src: PathLike, dest: PathLike, /) -> None:
     src, dest = map(Path, [src, dest])
-    LOGGER.info("%s '%s'...", verb, dest)
+    _LOGGER.info("%s '%s'...", verb, dest)
     text = src.read_text().rstrip("\n") + "\n"
     with writer(dest, overwrite=True) as temp:
         _ = temp.write_text(text)
-    MODIFICATIONS.add(str(dest))
+    _MODIFICATIONS.add(str(dest))
 
 
 def _yaml_dump(obj: Any, /) -> str:
     stream = StringIO()
-    YAML_INSTANCE.dump(obj, stream)
+    _YAML.dump(obj, stream)
     return stream.getvalue()
 
 
@@ -1192,7 +1192,7 @@ def _yield_write_context[T](
 
 @contextmanager
 def _yield_yaml_dict(path: PathLike, /) -> Iterator[StrDict]:
-    with _yield_write_context(path, YAML_INSTANCE.load, dict, _yaml_dump) as dict_:
+    with _yield_write_context(path, _YAML.load, dict, _yaml_dump) as dict_:
         yield dict_
 
 
