@@ -78,6 +78,9 @@ class Settings:
     github__pull_request__pytest__os__ubuntu: bool = option(
         default=False, help="Set up 'pull-request.yaml' pytest with Ubuntu"
     )
+    github__pull_request__pytest__python_version__default: bool = option(
+        default=False, help="Set up 'pull-request.yaml' pytest with default Python"
+    )
     github__pull_request__pytest__python_version__3_13: bool = option(
         default=False, help="Set up 'pull-request.yaml' pytest with Python 3.13"
     )
@@ -207,6 +210,7 @@ def main(settings: Settings, /) -> None:
         or settings.github__pull_request__pytest__os__windows
         or settings.github__pull_request__pytest__os__macos
         or settings.github__pull_request__pytest__os__ubuntu
+        or settings.github__pull_request__pytest__python_version__default
         or settings.github__pull_request__pytest__python_version__3_13
         or settings.github__pull_request__pytest__python_version__3_14
         or settings.github__pull_request__pytest__resolution__highest
@@ -218,6 +222,7 @@ def main(settings: Settings, /) -> None:
             pytest__os__windows=settings.github__pull_request__pytest__os__windows,
             pytest__os__macos=settings.github__pull_request__pytest__os__macos,
             pytest__os__ubuntu=settings.github__pull_request__pytest__os__ubuntu,
+            pytest__python_version__default=settings.github__pull_request__pytest__python_version__default,
             pytest__python_version__3_13=settings.github__pull_request__pytest__python_version__3_13,
             pytest__python_version__3_14=settings.github__pull_request__pytest__python_version__3_14,
             pytest__resolution__highest=settings.github__pull_request__pytest__resolution__highest,
@@ -329,6 +334,7 @@ def _add_github_pull_request_yaml(
     pytest__os__windows: bool = _SETTINGS.github__pull_request__pytest__os__windows,
     pytest__os__macos: bool = _SETTINGS.github__pull_request__pytest__os__macos,
     pytest__os__ubuntu: bool = _SETTINGS.github__pull_request__pytest__os__ubuntu,
+    pytest__python_version__default: bool = _SETTINGS.github__pull_request__pytest__python_version__default,
     pytest__python_version__3_13: bool = _SETTINGS.github__pull_request__pytest__python_version__3_13,
     pytest__python_version__3_14: bool = _SETTINGS.github__pull_request__pytest__python_version__3_14,
     pytest__resolution__highest: bool = _SETTINGS.github__pull_request__pytest__resolution__highest,
@@ -368,6 +374,7 @@ def _add_github_pull_request_yaml(
             pytest__os__windows
             or pytest__os__macos
             or pytest__os__ubuntu
+            or pytest__python_version__default
             or pytest__python_version__3_13
             or pytest__python_version__3_14
             or pytest__resolution__highest
@@ -404,6 +411,8 @@ def _add_github_pull_request_yaml(
             if pytest__os__ubuntu:
                 _ensure_contains(os, "ubuntu-latest")
             python_version_dict = _get_list(matrix, "python-version")
+            if pytest__python_version__default:
+                _ensure_contains(python_version_dict, python_version)
             if pytest__python_version__3_13:
                 _ensure_contains(python_version_dict, "3.13")
             if pytest__python_version__3_14:

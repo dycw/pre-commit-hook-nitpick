@@ -47,7 +47,7 @@ repos:
           - --script=script.py
         id: nitpick
     repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: 0.6.9
+    rev: 0.6.10
   - hooks:
       - id: replace-sequence-str
     repo: https://github.com/dycw/pre-commit-hooks
