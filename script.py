@@ -42,7 +42,6 @@ from utilities.iterables import OneEmptyError, OneNonUniqueError, one
 from utilities.logging import basic_config
 from utilities.os import is_pytest
 from utilities.pathlib import get_repo_root
-from utilities.pytest import IS_CI
 from utilities.subprocess import run
 from utilities.tempfile import TemporaryFile
 from utilities.text import strip_and_dedent
@@ -61,7 +60,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.6.18"
+__version__ = "0.6.19"
 _LOADER = EnvLoader("")
 _LOGGER = getLogger(__name__)
 _MODIFIED = ContextVar("modified", default=False)
@@ -168,6 +167,7 @@ class Settings:
     script: str | None = option(
         default=None, help="Set up a script instead of a package"
     )
+    skip_version_bump: bool = option(default=False, help="Skip bump version")
 
     @property
     def python_package_name_use(self) -> str | None:
@@ -213,8 +213,6 @@ def _main(settings: Settings, /) -> None:
         uv=settings.pre_commit__uv,
         script=settings.script,
     )
-    if not IS_CI:
-        _run_bump_my_version()
     if settings.coverage:
         _add_coveragerc_toml()
     if (
@@ -295,6 +293,8 @@ def _main(settings: Settings, /) -> None:
         _add_readme_md(name=settings.repo_name, description=settings.description)
     if settings.ruff:
         _add_ruff_toml(version=settings.python_version)
+    if not settings.skip_version_bump:
+        _run_bump_my_version()
     if _MODIFIED.get():
         sys.exit(1)
 
