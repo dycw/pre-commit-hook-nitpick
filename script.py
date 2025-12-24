@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 _BUMPVERSION_TOML = Path(".bumpversion.toml")
 _COVERAGERC_TOML = Path(".coveragerc.toml")
 _LOADER = EnvLoader("")
@@ -309,7 +309,7 @@ def _main(settings: Settings, /) -> None:
     if len(_MODIFICATIONS) >= 1:
         _LOGGER.info(
             "Exiting due to modifications: %s",
-            ", ".join(map(repr, sorted(_MODIFICATIONS))),
+            ", ".join(map(repr, map(str, sorted(_MODIFICATIONS)))),
         )
         sys.exit(1)
 
