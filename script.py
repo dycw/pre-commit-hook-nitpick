@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.3"
+__version__ = "0.7.4"
 _LOADER = EnvLoader("")
 _LOGGER = getLogger(__name__)
 _MODIFICATIONS: set[str] = set()
@@ -386,7 +386,7 @@ def _add_github_pull_request_yaml(
                 {"name": "Run 'pre-commit'", "uses": "dycw/action-pre-commit@latest"},
                 extra={
                     "with": {
-                        "token": "${{ secrets.GITHUB_TOKEN }}",
+                        "token": "${{secrets.GITHUB_TOKEN}}",
                         "repos": LiteralScalarString(
                             strip_and_dedent("""
                                 dycw/pre-commit-hook-nitpick
@@ -405,7 +405,7 @@ def _add_github_pull_request_yaml(
                 {"name": "Run 'pyright'", "uses": "dycw/action-pyright@latest"},
                 extra={
                     "with": {
-                        "token": "${{ secrets.GITHUB_TOKEN }}",
+                        "token": "${{secrets.GITHUB_TOKEN}}",
                         "python-version": python_version,
                     }
                 },
@@ -427,18 +427,18 @@ def _add_github_pull_request_yaml(
             env = _get_dict(pytest_dict, "env")
             env["CI"] = "1"
             pytest_dict["name"] = (
-                "pytest (${{ matrix.os }}, ${{ matrix.python-version }}, ${{ matrix.resolution }})"
+                "pytest (${{matrix.os}}, ${{matrix.python-version}}, ${{matrix.resolution}})"
             )
-            pytest_dict["runs-on"] = "${{ matrix.os }}"
+            pytest_dict["runs-on"] = "${{matrix.os}}"
             steps = _get_list(pytest_dict, "steps")
             steps_dict = _ensure_contains_partial(
                 steps,
                 {"name": "Run 'pytest'", "uses": "dycw/action-pytest@latest"},
                 extra={
                     "with": {
-                        "token": "${{ secrets.GITHUB_TOKEN }}",
-                        "python-version": "${{ matrix.python-version }}",
-                        "resolution": "${{ matrix.resolution }}",
+                        "token": "${{secrets.GITHUB_TOKEN}}",
+                        "python-version": "${{matrix.python-version}}",
+                        "resolution": "${{matrix.resolution}}",
                     }
                 },
             )
@@ -478,7 +478,7 @@ def _add_github_pull_request_yaml(
                 {
                     "name": "Run 'ruff'",
                     "uses": "dycw/action-ruff@latest",
-                    "with": {"token": "${{ secrets.GITHUB_TOKEN }}"},
+                    "with": {"token": "${{secrets.GITHUB_TOKEN}}"},
                 },
             )
 
@@ -513,7 +513,7 @@ def _add_github_push_yaml(
                     "name": "Build and publish package",
                     "uses": "dycw/action-publish@latest",
                 },
-                extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
+                extra={"with": {"token": "${{secrets.GITHUB_TOKEN}}"}},
             )
             if publish__trusted_publishing:
                 with_ = _get_dict(steps_dict, "with")
@@ -525,7 +525,7 @@ def _add_github_push_yaml(
             steps_dict = _ensure_contains_partial(
                 steps,
                 {"name": "Tag latest commit", "uses": "dycw/action-tag@latest"},
-                extra={"with": {"token": "${{ secrets.GITHUB_TOKEN }}"}},
+                extra={"with": {"token": "${{secrets.GITHUB_TOKEN}}"}},
             )
             if tag__major_minor:
                 with_ = _get_dict(steps_dict, "with")
