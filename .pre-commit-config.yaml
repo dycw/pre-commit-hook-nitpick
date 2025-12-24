@@ -18,7 +18,7 @@ repos:
           - --pre-commit--uv
           - --pyright
           - --pytest
-          - --python-version=3.13
+          - --python-version=3.12
           - --readme
           - --repo-name=pre-commit-hook-nitpick
           - --ruff

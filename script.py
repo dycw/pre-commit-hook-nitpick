@@ -1,9 +1,9 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.13"
+# requires-python = ">=3.12"
 # dependencies = [
 #   "click >= 8.3.1, < 8.4",
-#   "dycw-utilities >= 0.172.7, < 0.173",
+#   "dycw-utilities >= 0.173.0, < 0.174",
 #   "rich >= 14.2.0, < 14.3",
 #   "ruamel-yaml >=0.18.17, <0.19",
 #   "tomlkit >= 0.13.3, < 0.14",
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 _BUMPVERSION_TOML = Path(".bumpversion.toml")
 _COVERAGERC_TOML = Path(".coveragerc.toml")
 _LOADER = EnvLoader("")

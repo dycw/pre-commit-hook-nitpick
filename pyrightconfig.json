@@ -4,7 +4,7 @@
   "include": [
     "script.py"
   ],
-  "pythonVersion": "3.13",
+  "pythonVersion": "3.12",
   "reportCallInDefaultInitializer": true,
   "reportImplicitOverride": true,
   "reportImplicitStringConcatenation": true,
