@@ -381,6 +381,8 @@ def _add_github_pull_request_yaml(
             or pytest__resolution__lowest_direct
         ):
             pytest_dict = _get_dict(jobs, "pytest")
+            environment = _get_dict(pytest_dict, "environment")
+            environment["CI"] = "1"
             pytest_dict["name"] = (
                 "pytest (${{ matrix.os }}, ${{ matrix.python-version }}, ${{ matrix.resolution }})"
             )
