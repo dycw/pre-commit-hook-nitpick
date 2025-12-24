@@ -24,10 +24,36 @@ repos:
           - --ruff
           - --script=script.py
         id: nitpick
-  - hooks:
-      - id: replace-sequence-str
-    repo: https://github.com/dycw/pre-commit-hooks
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.10
+    hooks:
+      - id: ruff-check
+        args:
+          - --fix
+      - id: ruff-format
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.18
+    hooks:
+      - id: uv-lock
+        files: ^script\.py$
+        args:
+          - --upgrade
+          - --script=script.py
+  - repo: https://github.com/compwa/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+        args:
+          - --option
+          - indent_tables=true
+          - --option
+          - indent_entries=true
+          - --option
+          - reorder_keys=true
+  - repo: https://github.com/dycw/pre-commit-hooks
     rev: 0.13.26
+    hooks:
+      - id: replace-sequence-str
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -45,32 +71,6 @@ repos:
         args:
           - --autofix
       - id: trailing-whitespace
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.10
-    hooks:
-      - id: ruff-check
-        args:
-          - --fix
-      - id: ruff-format
-  - repo: https://github.com/compwa/taplo-pre-commit
-    rev: v0.9.3
-    hooks:
-      - id: taplo-format
-        args:
-          - --option
-          - indent_tables=true
-          - --option
-          - indent_entries=true
-          - --option
-          - reorder_keys=true
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.18
-    hooks:
-      - id: uv-lock
-        files: ^script\.py$
-        args:
-          - --upgrade
-          - --script=script.py
   - repo: local
     hooks:
       - id: prettier
