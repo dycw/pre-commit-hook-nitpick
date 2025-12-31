@@ -53,7 +53,7 @@ wheels = [
 
 [[package]]
 name = "dycw-utilities"
-version = "0.173.0"
+version = "0.173.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "atomicwrites" },
@@ -61,9 +61,9 @@ dependencies = [
     { name = "tzlocal" },
     { name = "whenever" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/fa/273bdfffffe3c56315ba8dfb6dc86517823a36babdc0173a04e24d3c028f/dycw_utilities-0.173.0.tar.gz", hash = "sha256:98600c22da92f88b02e40b7df61c61c8221a17502922efa8a89740e3e77bb6c7", size = 163122, upload-time = "2025-12-24T22:55:09.421Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/72/7ba570c13da27c725ab32b87b977964ca4227bc49cf773aabc664aaf06fe/dycw_utilities-0.173.6.tar.gz", hash = "sha256:d04d14d38d1093646a785e5164e3c8d10f66db3db50718b94da50f6c2d689988", size = 163778, upload-time = "2025-12-25T08:48:28.557Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/3a/dfd84834c892fe8fec02b2952ae8693544fb14ea64d57d0d6d107b557d70/dycw_utilities-0.173.0-py3-none-any.whl", hash = "sha256:3f3b769fee3d441bae938223bb1efc5862493a359a95ee9d4a7eea15f17bc4b7", size = 197282, upload-time = "2025-12-24T22:55:07.896Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/47/7f9ed5811cb77af83c92f73c6076a7ac496f3c59999d6b0f0d80e86d774e/dycw_utilities-0.173.6-py3-none-any.whl", hash = "sha256:a1148d0071e016aff0236d63128d8b0a4a104f61415928f905559f13c4b7ca19", size = 198225, upload-time = "2025-12-25T08:48:29.975Z" },
 ]
 
 [[package]]
