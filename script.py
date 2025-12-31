@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.8"
+__version__ = "0.7.9"
 _BUMPVERSION_TOML = Path(".bumpversion.toml")
 _COVERAGERC_TOML = Path(".coveragerc.toml")
 _LOADER = EnvLoader("")
@@ -114,9 +114,6 @@ class Settings:
     github__pull_request__ruff: bool = option(
         default=False, help="Set up 'pull-request.yaml' ruff"
     )
-    github__push__tag__latest: bool = option(
-        default=False, help="Set up 'push.yaml' tagging"
-    )
     github__push__publish: bool = option(
         default=False, help="Set up 'push.yaml' publishing"
     )
@@ -124,11 +121,14 @@ class Settings:
         default=False, help="Set up 'push.yaml' with trusted publishing"
     )
     github__push__tag: bool = option(default=False, help="Set up 'push.yaml' tagging")
+    github__push__tag__major: bool = option(
+        default=False, help="Set up 'push.yaml' with the 'major' tag"
+    )
     github__push__tag__major_minor: bool = option(
         default=False, help="Set up 'push.yaml' with the 'major.minor' tag"
     )
-    github__push__tag__major: bool = option(
-        default=False, help="Set up 'push.yaml' with the 'major' tag"
+    github__push__tag__latest: bool = option(
+        default=False, help="Set up 'push.yaml' tagging"
     )
     package_name: str | None = option(default=None, help="Package name")
     pre_commit__dockerfmt: bool = option(
