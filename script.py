@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.14"
+# requires-python = ">=3.12"
 # dependencies = [
 #   "click >=8.3.1, <8.4",
 #   "dycw-utilities >=0.173.0, <0.174",  # 0.175.10 does not work
