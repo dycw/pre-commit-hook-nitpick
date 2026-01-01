@@ -788,7 +788,6 @@ def _add_readme_md(
 
 def _add_ruff_toml(*, version: str = _SETTINGS.python_version) -> None:
     with _yield_toml_doc("ruff.toml") as doc:
-        doc.copy()
         doc["target-version"] = f"py{version.replace('.', '')}"
         doc["unsafe-fixes"] = True
         fmt = _get_table(doc, "format")
