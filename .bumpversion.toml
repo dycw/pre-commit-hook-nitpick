@@ -1,7 +1,7 @@
 [tool]
   [tool.bumpversion]
     allow_dirty = true
-    current_version = "0.7.12"
+    current_version = "0.7.13"
 
     [[tool.bumpversion.files]]
       filename = "script.py"
