@@ -6,16 +6,16 @@ on:
   schedule:
     - cron: 0 0 * * *
 jobs:
-  # pre-commit:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Run 'pre-commit'
-  #       uses: dycw/action-pre-commit@latest
-  #       with:
-  #         token: ${{secrets.GITHUB_TOKEN}}
-  #         repos: |-
-  #           dycw/pre-commit-hook-nitpick
-  #           pre-commit/pre-commit-hooks
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run 'pre-commit'
+        uses: dycw/action-pre-commit@latest
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          repos: |-
+            dycw/pre-commit-hook-nitpick
+            pre-commit/pre-commit-hooks
   pyright:
     runs-on: ubuntu-latest
     steps:
