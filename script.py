@@ -1202,7 +1202,7 @@ def _yield_write_context[T](
         data = loads(path.read_text())
         yield data
         current = loads(path.read_text())
-        is_equal = current == data  # do not use !=
+        is_equal = current == data  # tomlkit cannot handle !=
         if not is_equal:
             run_write("Modifying", data)
 
