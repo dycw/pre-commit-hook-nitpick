@@ -3,9 +3,9 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #   "click >=8.3.1, <8.4",
-#   "dycw-utilities >=0.175.10, <0.176",
+#   "dycw-utilities >=0.173.0, <0.174",  # 0.175.10 does not work
 #   "rich >=14.2.0, <14.3",
-#   "ruamel-yaml >=0.18.17, <0.19",
+#   "ruamel-yaml >=0.19.0, <0.20",
 #   "tomlkit >=0.13.3, <0.14",
 #   "typed-settings[attrs, click] >=25.3.0, <25.4",
 #   "xdg-base-dirs >=6.0.2, <6.1",
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.12"
+__version__ = "0.7.13"
 _BUMPVERSION_TOML = Path(".bumpversion.toml")
 _COVERAGERC_TOML = Path(".coveragerc.toml")
 _LOADER = EnvLoader("")
@@ -1084,6 +1084,7 @@ def _run_ripgrep_and_sd(*, version: str = _SETTINGS.python_version) -> None:
             "rg",
             "--files-with-matches",
             "--pcre2",
+            "--type=py",
             rf'# requires-python = ">=(?!{version})\d+\.\d+"',
             return_=True,
         ).splitlines()
@@ -1091,8 +1092,7 @@ def _run_ripgrep_and_sd(*, version: str = _SETTINGS.python_version) -> None:
         if error.returncode == 1:
             return
         raise
-    paths = list(map(Path, files))
-    for path in paths:
+    for path in map(Path, files):
         with _yield_text_file(path) as temp:
             text = sub(
                 r'# requires-python = ">=\d+\.\d+"',
