@@ -3,9 +3,9 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #   "click >=8.3.1, <8.4",
-#   "dycw-utilities >=0.173.0, <0.174",
+#   "dycw-utilities >=0.175.10, <0.176",
 #   "rich >=14.2.0, <14.3",
-#   "ruamel-yaml >=0.18.17, <0.19",
+#   "ruamel-yaml >=0.19.0, <0.20",
 #   "tomlkit >=0.13.3, <0.14",
 #   "typed-settings[attrs, click] >=25.3.0, <25.4",
 #   "xdg-base-dirs >=6.0.2, <6.1",
