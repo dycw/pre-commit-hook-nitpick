@@ -1,29 +1,29 @@
 repos:
-  - repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: 0.7.10
-    hooks:
-      - args:
-          - --description=Pre-commit hook to nitpick your project
-          - --github--pull-request--pre-commit
-          - --github--pull-request--pyright
-          - --github--pull-request--pytest--os--macos
-          - --github--pull-request--pytest--os--ubuntu
-          - --github--pull-request--pytest--python-version--default
-          - --github--pull-request--pytest--resolution--highest
-          - --github--pull-request--ruff
-          - --github--push--tag
-          - --pre-commit--prettier
-          - --pre-commit--ruff
-          - --pre-commit--taplo
-          - --pre-commit--uv
-          - --pyright
-          - --pytest
-          - --python-version=3.12
-          - --readme
-          - --repo-name=pre-commit-hook-nitpick
-          - --ruff
-          - --script=script.py
-        id: nitpick
+  # - repo: https://github.com/dycw/pre-commit-hook-nitpick
+  #   rev: 0.7.10
+  #   hooks:
+  #     - args:
+  #         - --description=Pre-commit hook to nitpick your project
+  #         - --github--pull-request--pre-commit
+  #         - --github--pull-request--pyright
+  #         - --github--pull-request--pytest--os--macos
+  #         - --github--pull-request--pytest--os--ubuntu
+  #         - --github--pull-request--pytest--python-version--default
+  #         - --github--pull-request--pytest--resolution--highest
+  #         - --github--pull-request--ruff
+  #         - --github--push--tag
+  #         - --pre-commit--prettier
+  #         - --pre-commit--ruff
+  #         - --pre-commit--taplo
+  #         - --pre-commit--uv
+  #         - --pyright
+  #         - --pytest
+  #         - --python-version=3.12
+  #         - --readme
+  #         - --repo-name=pre-commit-hook-nitpick
+  #         - --ruff
+  #         - --script=script.py
+  #       id: nitpick
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
