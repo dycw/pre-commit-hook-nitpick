@@ -3,9 +3,9 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #   "click >=8.3.1, <8.4",
-#   "dycw-utilities >=0.173.0, <0.174",
+#   "dycw-utilities >=0.175.10, <0.176",
 #   "rich >=14.2.0, <14.3",
-#   "ruamel-yaml >=0.18.17, <0.19",
+#   "ruamel-yaml >=0.19.0, <0.20",
 #   "tomlkit >=0.13.3, <0.14",
 #   "typed-settings[attrs, click] >=25.3.0, <25.4",
 #   "xdg-base-dirs >=6.0.2, <6.1",
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.7.9"
+__version__ = "0.7.10"
 _BUMPVERSION_TOML = Path(".bumpversion.toml")
 _COVERAGERC_TOML = Path(".coveragerc.toml")
 _LOADER = EnvLoader("")
@@ -1194,14 +1194,16 @@ def _yield_write_context[T](
             _write_path_and_modified(verb, temp, path)
 
     try:
-        data = loads(path.read_text())
+        current = path.read_text()
     except FileNotFoundError:
         yield (default := get_default())
         run_write("Writing", default)
     else:
+        data = loads(path.read_text())
         yield data
         current = loads(path.read_text())
-        if data != current:
+        is_equal = current == data  # tomlkit cannot handle !=
+        if not is_equal:
             run_write("Modifying", data)
 
 
