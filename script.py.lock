@@ -5,7 +5,7 @@ requires-python = ">=3.12"
 [manifest]
 requirements = [
     { name = "click", specifier = ">=8.3.1,<8.4" },
-    { name = "dycw-utilities", specifier = ">=0.173.0,<0.174" },
+    { name = "dycw-utilities", specifier = ">=0.175.36,<0.176" },
     { name = "pyright" },
     { name = "pytest-xdist" },
     { name = "rich", specifier = ">=14.2.0,<14.3" },
@@ -53,7 +53,7 @@ wheels = [
 
 [[package]]
 name = "dycw-utilities"
-version = "0.173.6"
+version = "0.175.36"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "atomicwrites" },
@@ -61,9 +61,8 @@ dependencies = [
     { name = "tzlocal" },
     { name = "whenever" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/72/7ba570c13da27c725ab32b87b977964ca4227bc49cf773aabc664aaf06fe/dycw_utilities-0.173.6.tar.gz", hash = "sha256:d04d14d38d1093646a785e5164e3c8d10f66db3db50718b94da50f6c2d689988", size = 163778, upload-time = "2025-12-25T08:48:28.557Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/47/7f9ed5811cb77af83c92f73c6076a7ac496f3c59999d6b0f0d80e86d774e/dycw_utilities-0.173.6-py3-none-any.whl", hash = "sha256:a1148d0071e016aff0236d63128d8b0a4a104f61415928f905559f13c4b7ca19", size = 198225, upload-time = "2025-12-25T08:48:29.975Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/94/a13735cf2cc38132f4d00da69b052a915d60eae8c8ae886197eab50b9868/dycw_utilities-0.175.36-py3-none-any.whl", hash = "sha256:cc953958304cd5fafc9500bf25e2bf6fd250e67bbc36c8e62763ff524cdbf233", size = 205342, upload-time = "2026-01-02T06:26:33.599Z" },
 ]
 
 [[package]]
@@ -210,9 +209,9 @@ wheels = [
 
 [[package]]
 name = "ruamel-yaml-clibz"
-version = "0.3.4"
+version = "0.3.7"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8f/95/9bcc25e84703180c3941062796572e0fc73bd659086efdc4ef9b8af19e36/ruamel_yaml_clibz-0.3.4.tar.gz", hash = "sha256:e99077ac6aa4943af1000161a0cb793a379c5c8cd03ea8dd3803e0b58739b685", size = 231076, upload-time = "2025-12-31T17:11:09.341Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/73/2a9857a017f8ee260c683d8155634f0e3ca57964da2c3055b02822d582cd/ruamel_yaml_clibz-0.3.7.tar.gz", hash = "sha256:2be85214793cfc787eb12380fa3226e10cd7727b24551c3067c173d66c9bedd9", size = 231233, upload-time = "2026-01-02T14:52:41.734Z" }
 
 [[package]]
 name = "tomlkit"

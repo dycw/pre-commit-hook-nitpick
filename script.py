@@ -3,7 +3,7 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #   "click >=8.3.1, <8.4",
-#   "dycw-utilities >=0.173.0, <0.174",  # 0.175.10 does not work
+#   "dycw-utilities >=0.175.36, <0.176",
 #   "rich >=14.2.0, <14.3",
 #   "ruamel-yaml >=0.19.0, <0.20",
 #   "tomlkit >=0.13.3, <0.14",
@@ -43,7 +43,7 @@ from utilities.iterables import OneEmptyError, OneNonUniqueError, one
 from utilities.logging import basic_config
 from utilities.os import is_pytest
 from utilities.pathlib import get_repo_root
-from utilities.subprocess import run
+from utilities.subprocess import ripgrep, run
 from utilities.tempfile import TemporaryFile
 from utilities.text import strip_and_dedent
 from utilities.version import ParseVersionError, Version, parse_version
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 type HasAppend = Array | list[Any]
 type HasSetDefault = Container | StrDict | Table
 type StrDict = dict[str, Any]
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 _BUMPVERSION_TOML = Path(".bumpversion.toml")
 _COVERAGERC_TOML = Path(".coveragerc.toml")
 _LOADER = EnvLoader("")
@@ -213,7 +213,7 @@ def _main(settings: Settings, /) -> None:
     )
     _check_versions()
     _run_pre_commit_update()
-    _run_ripgrep_and_sd(version=settings.python_version)
+    _run_ripgrep_and_replace(version=settings.python_version)
     _update_action_file_extensions()
     _update_action_versions()
     _add_pre_commit(
@@ -1078,21 +1078,16 @@ def _run_pre_commit_update() -> None:
             run_autoupdate()
 
 
-def _run_ripgrep_and_sd(*, version: str = _SETTINGS.python_version) -> None:
-    try:
-        files = run(
-            "rg",
-            "--files-with-matches",
-            "--pcre2",
-            "--type=py",
-            rf'# requires-python = ">=(?!{version})\d+\.\d+"',
-            return_=True,
-        ).splitlines()
-    except CalledProcessError as error:
-        if error.returncode == 1:
-            return
-        raise
-    for path in map(Path, files):
+def _run_ripgrep_and_replace(*, version: str = _SETTINGS.python_version) -> None:
+    result = ripgrep(
+        "--files-with-matches",
+        "--pcre2",
+        "--type=py",
+        rf'# requires-python = ">=(?!{version})\d+\.\d+"',
+    )
+    if result is None:
+        return
+    for path in map(Path, result.splitlines()):
         with _yield_text_file(path) as temp:
             text = sub(
                 r'# requires-python = ">=\d+\.\d+"',
