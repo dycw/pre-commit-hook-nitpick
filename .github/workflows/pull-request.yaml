@@ -24,7 +24,6 @@ jobs:
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           python-version: "3.12"
-          with-requirements: script.py
   pytest:
     env:
       CI: "1"
@@ -38,7 +37,6 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
           python-version: ${{matrix.python-version}}
           resolution: ${{matrix.resolution}}
-          with-requirements: script.py
     strategy:
       fail-fast: false
       matrix:
