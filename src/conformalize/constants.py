@@ -9,6 +9,7 @@ from utilities.pytest import IS_CI
 
 BUMPVERSION_TOML = Path(".bumpversion.toml")
 COVERAGERC_TOML = Path(".coveragerc.toml")
+ENVRC = Path(".envrc")
 GITHUB_WORKFLOWS = Path(".github/workflows")
 GITHUB_PULL_REQUEST_YAML = GITHUB_WORKFLOWS / "pull-request.yaml"
 GITHUB_PUSH_YAML = GITHUB_WORKFLOWS / "push.yaml"
@@ -31,6 +32,7 @@ RUN_VERSION_BUMP = not (
 __all__ = [
     "BUMPVERSION_TOML",
     "COVERAGERC_TOML",
+    "ENVRC",
     "GITHUB_PULL_REQUEST_YAML",
     "GITHUB_PUSH_YAML",
     "GITHUB_WORKFLOWS",
