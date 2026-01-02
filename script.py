@@ -3,7 +3,7 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #   "click >=8.3.1, <8.4",
-#   "dycw-utilities >=0.173.0, <0.174",  # 0.175.10 does not work
+#   "dycw-utilities >=0.175.36, <0.176",
 #   "rich >=14.2.0, <14.3",
 #   "ruamel-yaml >=0.19.0, <0.20",
 #   "tomlkit >=0.13.3, <0.14",
