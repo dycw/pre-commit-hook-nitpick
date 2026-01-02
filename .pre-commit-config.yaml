@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/dycw/conformalize
-    rev: 0.9.1
+    rev: 0.10.0
     hooks:
       - args:
           - --description=Project conformalizer
@@ -26,7 +26,7 @@ repos:
           - --readme
           - --repo-name=conformalize
           - --ruff
-        id: nitpick
+        id: conformalize
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

@@ -849,11 +849,11 @@ def run_bump_my_version(*, modifications: MutableSet[Path] | None = None) -> Non
             prev = get_version_from_git_show()
         except (CalledProcessError, ParseVersionError, NonExistentKey):
             run_set_version(Version(0, 1, 0))
-    else:
-        current = get_version_from_bumpversion_toml()
-        patched = prev.bump_patch()
-        if current not in {patched, prev.bump_minor(), prev.bump_major()}:
-            run_set_version(patched)
+            return
+    current = get_version_from_bumpversion_toml()
+    patched = prev.bump_patch()
+    if current not in {patched, prev.bump_minor(), prev.bump_major()}:
+        run_set_version(patched)
 
 
 ##
