@@ -859,9 +859,7 @@ def run_bump_my_version(*, modifications: MutableSet[Path] | None = None) -> Non
 ##
 
 
-def run_pre_commit_update(
-    *, modifications: MutableSet[Path] | None = None
-) -> Path | None:
+def run_pre_commit_update(*, modifications: MutableSet[Path] | None = None) -> None:
     cache = xdg_cache_home() / "pre-commit-hook-nitpick" / get_repo_root().name
 
     def run_autoupdate() -> None:
@@ -877,11 +875,11 @@ def run_pre_commit_update(
     try:
         text = cache.read_text()
     except FileNotFoundError:
-        return run_autoupdate()
+        run_autoupdate()
     else:
         prev = ZonedDateTime.parse_iso(text.rstrip("\n"))
         if prev < (get_now() - 12 * HOUR):
-            return run_autoupdate()
+            run_autoupdate()
 
 
 ##

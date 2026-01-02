@@ -12,17 +12,29 @@ from utilities.os import is_pytest
 from utilities.text import strip_and_dedent
 
 from nitpick import __version__
+from nitpick.lib import (
+    add_bumpversion_toml,
+    add_coveragerc_toml,
+    add_github_pull_request_yaml,
+    add_github_push_yaml,
+    add_pre_commit_config_yaml,
+    add_pyproject_toml,
+    add_pyrightconfig_json,
+    add_pytest_toml,
+    add_readme_md,
+    add_ruff_toml,
+    check_versions,
+    run_bump_my_version,
+    run_pre_commit_update,
+    run_ripgrep_and_replace,
+    update_action_file_extensions,
+    update_action_versions,
+)
 from nitpick.logging import LOGGER
 from nitpick.settings import LOADER, Settings
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-_MODIFICATIONS: set[Path] = set()
-
-
-MODIFICATIONS: set[Path] = set()
 
 
 @command(**CONTEXT_SETTINGS)
@@ -39,16 +51,21 @@ def _main(settings: Settings, /) -> None:
         __version__,
         pretty_repr(settings),
     )
-    _add_bumpversion_toml(
+    modifications: set[Path] = set()
+    add_bumpversion_toml(
+        modifications=modifications,
         pyproject=settings.pyproject,
         python_package_name_use=settings.python_package_name_use,
     )
-    _check_versions()
-    _run_pre_commit_update()
-    _run_ripgrep_and_replace(version=settings.python_version)
-    _update_action_file_extensions()
-    _update_action_versions()
-    _add_pre_commit(
+    check_versions()
+    run_pre_commit_update(modifications=modifications)
+    run_ripgrep_and_replace(
+        modifications=modifications, version=settings.python_version
+    )
+    update_action_file_extensions(modifications=modifications)
+    update_action_versions(modifications=modifications)
+    add_pre_commit_config_yaml(
+        modifications=modifications,
         dockerfmt=settings.pre_commit__dockerfmt,
         prettier=settings.pre_commit__prettier,
         ruff=settings.pre_commit__ruff,
@@ -58,7 +75,7 @@ def _main(settings: Settings, /) -> None:
         script=settings.script,
     )
     if settings.coverage:
-        _add_coveragerc_toml()
+        add_coveragerc_toml(modifications=modifications)
     if (
         settings.github__pull_request__pre_commit
         or settings.github__pull_request__pyright
@@ -73,7 +90,8 @@ def _main(settings: Settings, /) -> None:
         or settings.github__pull_request__pytest__resolution__lowest_direct
         or settings.github__pull_request__ruff
     ):
-        _add_github_pull_request_yaml(
+        add_github_pull_request_yaml(
+            modifications=modifications,
             pre_commit=settings.github__pull_request__pre_commit,
             pyright=settings.github__pull_request__pyright,
             pytest__os__windows=settings.github__pull_request__pytest__os__windows,
@@ -98,7 +116,8 @@ def _main(settings: Settings, /) -> None:
         or settings.github__push__tag__major
         or settings.github__push__tag__latest
     ):
-        _add_github_push_yaml(
+        add_github_push_yaml(
+            modifications=modifications,
             publish=settings.github__push__publish,
             publish__trusted_publishing=settings.github__push__publish__trusted_publishing,
             tag=settings.github__push__tag,
@@ -111,7 +130,8 @@ def _main(settings: Settings, /) -> None:
         or settings.pyproject__project__optional_dependencies__scripts
         or (len(settings.pyproject__tool__uv__indexes) >= 1)
     ):
-        _add_pyproject_toml(
+        add_pyproject_toml(
+            modifications=modifications,
             version=settings.python_version,
             description=settings.description,
             package_name=settings.package_name,
@@ -122,14 +142,19 @@ def _main(settings: Settings, /) -> None:
             tool__uv__indexes=settings.pyproject__tool__uv__indexes,
         )
     if settings.pyright:
-        _add_pyrightconfig_json(version=settings.python_version, script=settings.script)
+        add_pyrightconfig_json(
+            modifications=modifications,
+            version=settings.python_version,
+            script=settings.script,
+        )
     if (
         settings.pytest
         or settings.pytest__asyncio
         or settings.pytest__ignore_warnings
         or (settings.pytest__timeout is not None)
     ):
-        _add_pytest_toml(
+        add_pytest_toml(
+            modifications=modifications,
             asyncio=settings.pytest__asyncio,
             ignore_warnings=settings.pytest__ignore_warnings,
             timeout=settings.pytest__timeout,
@@ -138,15 +163,19 @@ def _main(settings: Settings, /) -> None:
             script=settings.script,
         )
     if settings.readme:
-        _add_readme_md(name=settings.repo_name, description=settings.description)
+        add_readme_md(
+            modifications=modifications,
+            name=settings.repo_name,
+            description=settings.description,
+        )
     if settings.ruff:
-        _add_ruff_toml(version=settings.python_version)
+        add_ruff_toml(modifications=modifications, version=settings.python_version)
     if not settings.skip_version_bump:
-        _run_bump_my_version()
-    if len(_MODIFICATIONS) >= 1:
+        run_bump_my_version(modifications=modifications)
+    if len(modifications) >= 1:
         LOGGER.info(
             "Exiting due to modifications: %s",
-            ", ".join(map(repr, map(str, sorted(_MODIFICATIONS)))),
+            ", ".join(map(repr, map(str, sorted(modifications)))),
         )
         sys.exit(1)
 
