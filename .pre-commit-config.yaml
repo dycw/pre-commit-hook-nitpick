@@ -81,7 +81,7 @@ repos:
           - highest
           - --prerelease
           - disallow
-  - repo: https://github.com/dycw/pre-commit-hook-nitpick
-    rev: master
-    hooks:
-      - id: nitpick
+  # - repo: https://github.com/dycw/pre-commit-hook-nitpick
+  #   rev: master
+  #   hooks:
+  #     - id: nitpick
