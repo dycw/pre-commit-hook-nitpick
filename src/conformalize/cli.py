@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from re import search
 from typing import TYPE_CHECKING
 
 from click import command
@@ -9,9 +10,11 @@ from typed_settings import click_options
 from utilities.click import CONTEXT_SETTINGS
 from utilities.logging import basic_config
 from utilities.os import is_pytest
+from utilities.pytest import IS_CI
 from utilities.text import strip_and_dedent
 
 from conformalize import __version__
+from conformalize.constants import REPO_ROOT
 from conformalize.lib import (
     add_bumpversion_toml,
     add_coveragerc_toml,
@@ -170,7 +173,10 @@ def _main(settings: Settings, /) -> None:
         )
     if settings.ruff:
         add_ruff_toml(modifications=modifications, version=settings.python_version)
-    if not settings.skip_version_bump:
+    if not (
+        (search("template", str(REPO_ROOT)) is not None)
+        or (IS_CI and (search("conformalize", str(REPO_ROOT)) is not None))
+    ):
         run_bump_my_version(modifications=modifications)
     if len(modifications) >= 1:
         LOGGER.info(

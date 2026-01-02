@@ -5,7 +5,7 @@ from contextlib import contextmanager, suppress
 from io import StringIO
 from itertools import product
 from pathlib import Path
-from re import MULTILINE, escape, search, sub
+from re import MULTILINE, escape, sub
 from string import Template
 from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, Any, Literal, assert_never
@@ -833,9 +833,6 @@ def get_version_from_git_tag() -> Version:
 
 
 def run_bump_my_version(*, modifications: MutableSet[Path] | None = None) -> None:
-    if search("template", str(get_repo_root())):
-        return
-
     def run_set_version(version: Version, /) -> None:
         LOGGER.info("Setting version to %s...", version)
         set_version(version)

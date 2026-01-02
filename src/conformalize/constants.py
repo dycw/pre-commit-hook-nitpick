@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ruamel.yaml import YAML
+from utilities.pathlib import get_repo_root
 
 BUMPVERSION_TOML = Path(".bumpversion.toml")
 COVERAGERC_TOML = Path(".coveragerc.toml")
@@ -14,6 +15,7 @@ PYPROJECT_TOML = Path("pyproject.toml")
 PYRIGHTCONFIG_JSON = Path("pyrightconfig.json")
 PYTEST_TOML = Path("pytest.toml")
 README_MD = Path("README.md")
+REPO_ROOT = get_repo_root()
 RUFF_TOML = Path("ruff.toml")
 YAML_INSTANCE = YAML()
 
@@ -29,6 +31,7 @@ __all__ = [
     "PYRIGHTCONFIG_JSON",
     "PYTEST_TOML",
     "README_MD",
+    "REPO_ROOT",
     "RUFF_TOML",
     "YAML_INSTANCE",
 ]

@@ -110,7 +110,6 @@ class Settings:
     script: str | None = option(
         default=None, help="Set up a script instead of a package"
     )
-    skip_version_bump: bool = option(default=False, help="Skip bump version")
 
     @property
     def python_package_name_use(self) -> str | None:
