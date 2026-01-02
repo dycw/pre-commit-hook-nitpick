@@ -6,6 +6,7 @@ from io import StringIO
 from itertools import product
 from pathlib import Path
 from re import MULTILINE, escape, sub
+from shlex import join
 from string import Template
 from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, Any, Literal, assert_never
@@ -20,7 +21,7 @@ from utilities.atomicwrites import writer
 from utilities.functions import ensure_class
 from utilities.iterables import OneEmptyError, OneNonUniqueError, one
 from utilities.pathlib import get_repo_root
-from utilities.subprocess import ripgrep, run
+from utilities.subprocess import append_text, ripgrep, run
 from utilities.tempfile import TemporaryFile
 from utilities.text import strip_and_dedent
 from utilities.version import ParseVersionError, Version, parse_version
@@ -31,6 +32,7 @@ from xdg_base_dirs import xdg_cache_home
 from conformalize.constants import (
     BUMPVERSION_TOML,
     COVERAGERC_TOML,
+    ENVRC,
     GITHUB_PULL_REQUEST_YAML,
     GITHUB_PUSH_YAML,
     PRE_COMMIT_CONFIG_YAML,
@@ -103,6 +105,58 @@ def add_coveragerc_toml(*, modifications: MutableSet[Path] | None = None) -> Non
         run["branch"] = True
         run["data_file"] = ".coverage/data"
         run["parallel"] = True
+
+
+##
+
+
+def add_envrc(
+    *,
+    modifications: MutableSet[Path] | None = None,
+    uv: bool = False,
+    version: str = SETTINGS.python_version,
+    script: str | None = SETTINGS.script,
+) -> None:
+    with yield_text_file(ENVRC, modifications=modifications) as temp:
+        shebang = strip_and_dedent("""
+            #!/usr/bin/env sh
+            # shellcheck source=/dev/null
+        """)
+        append_text(temp, shebang, skip_if_present=True, flags=MULTILINE, blank_lines=2)
+
+        echo = strip_and_dedent("""
+            # echo
+            echo_date() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" >&2; }
+        """)
+        append_text(temp, echo, skip_if_present=True, flags=MULTILINE, blank_lines=2)
+
+        if uv:
+            uv_sync_args: list[str] = ["uv", "sync"]
+            if script is None:
+                uv_sync_args.extend(["--all-extras", "--all-groups"])
+            uv_sync_args.extend(["--active", "--locked"])
+            if script is not None:
+                uv_sync_args.extend(["--script", script])
+            uv_sync = join(uv_sync_args)
+            uv_text = strip_and_dedent(f"""
+                # uv
+                export UV_MANAGED_PYTHON='true'
+                export UV_PRERELEASE='disallow'
+                export UV_PYTHON='{version}'
+                if ! command -v uv >/dev/null 2>&1; then
+                    echo_date "ERROR: 'uv' not found" && exit 1
+                fi
+                activate='.venv/bin/activate'
+                if [ -f $activate ]; then
+                    . $activate
+                else
+                    uv venv
+                fi
+                {uv_sync}
+            """)
+            append_text(
+                temp, uv_text, skip_if_present=True, flags=MULTILINE, blank_lines=2
+            )
 
 
 ##
@@ -1035,9 +1089,9 @@ def yield_text_file(
             yield temp
             write_text("Writing", temp, path, modifications=modifications)
     else:
-        with TemporaryFile() as temp:
+        with TemporaryFile(text=current) as temp:
             yield temp
-            if temp.read_text().rstrip("\n") != current.rstrip("\n"):
+            if temp.read_text() != current:
                 write_text("Writing", temp, path, modifications=modifications)
 
 
@@ -1103,6 +1157,7 @@ def yield_yaml_dict(
 __all__ = [
     "add_bumpversion_toml",
     "add_coveragerc_toml",
+    "add_envrc",
     "add_github_pull_request_yaml",
     "add_github_push_yaml",
     "add_pre_commit_config_yaml",

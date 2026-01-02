@@ -9,6 +9,8 @@ from conformalize.constants import RUN_VERSION_BUMP
 class Settings:
     coverage: bool = option(default=False, help="Set up '.coveragerc.toml'")
     description: str | None = option(default=None, help="Repo description")
+    envrc: bool = option(default=False, help="Set up '.envrc'")
+    envrc__uv: bool = option(default=False, help="Set up '.envrc' with uv")
     github__pull_request__pre_commit: bool = option(
         default=False, help="Set up 'pull-request.yaml' pre-commit"
     )

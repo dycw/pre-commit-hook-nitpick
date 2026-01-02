@@ -7,6 +7,7 @@ from click import command
 from rich.pretty import pretty_repr
 from typed_settings import click_options
 from utilities.click import CONTEXT_SETTINGS
+from utilities.inflect import counted_noun
 from utilities.logging import basic_config
 from utilities.os import is_pytest
 from utilities.text import strip_and_dedent
@@ -15,6 +16,7 @@ from conformalize import __version__
 from conformalize.lib import (
     add_bumpversion_toml,
     add_coveragerc_toml,
+    add_envrc,
     add_github_pull_request_yaml,
     add_github_push_yaml,
     add_pre_commit_config_yaml,
@@ -76,6 +78,13 @@ def _main(settings: Settings, /) -> None:
     )
     if settings.coverage:
         add_coveragerc_toml(modifications=modifications)
+    if settings.envrc or settings.envrc__uv:
+        add_envrc(
+            modifications=modifications,
+            uv=settings.envrc__uv,
+            version=settings.python_version,
+            script=settings.script,
+        )
     if (
         settings.github__pull_request__pre_commit
         or settings.github__pull_request__pyright
@@ -174,7 +183,8 @@ def _main(settings: Settings, /) -> None:
         run_bump_my_version(modifications=modifications)
     if len(modifications) >= 1:
         LOGGER.info(
-            "Exiting due to modifications: %s",
+            "Exiting due to %s: %s",
+            counted_noun(modifications, "modification"),
             ", ".join(map(repr, map(str, sorted(modifications)))),
         )
         sys.exit(1)
