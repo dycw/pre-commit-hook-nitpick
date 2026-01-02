@@ -197,7 +197,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.3.1,<8.4" },
-    { name = "dycw-utilities", specifier = ">=0.175.36,<0.176" },
+    { name = "dycw-utilities", specifier = ">=0.175.38,<0.176" },
     { name = "inflect", specifier = ">=7.5.0" },
     { name = "rich", specifier = ">=14.2.0,<14.3" },
     { name = "ruamel-yaml", specifier = ">=0.19.0,<0.20" },
@@ -227,7 +227,7 @@ wheels = [
 
 [[package]]
 name = "dycw-utilities"
-version = "0.175.36"
+version = "0.175.38"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "atomicwrites" },
@@ -236,7 +236,7 @@ dependencies = [
     { name = "whenever" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e2/94/a13735cf2cc38132f4d00da69b052a915d60eae8c8ae886197eab50b9868/dycw_utilities-0.175.36-py3-none-any.whl", hash = "sha256:cc953958304cd5fafc9500bf25e2bf6fd250e67bbc36c8e62763ff524cdbf233", size = 205342, upload-time = "2026-01-02T06:26:33.599Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/a9/56a536e32392eb42d33ae3e48085072c47276304356b57809adc772a714b/dycw_utilities-0.175.38-py3-none-any.whl", hash = "sha256:8ce1ae95f8ee62d3ab5db8f38ae39b953cb1e81e0b984a456b81e6ee2890879b", size = 205397, upload-time = "2026-01-02T23:54:51.429Z" },
 ]
 
 [package.optional-dependencies]

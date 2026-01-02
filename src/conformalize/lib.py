@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager, suppress
 from io import StringIO
-from itertools import product, repeat
+from itertools import product
 from pathlib import Path
-from re import MULTILINE, escape, search, sub
+from re import MULTILINE, escape, sub
 from shlex import join
 from string import Template
 from subprocess import CalledProcessError
@@ -21,7 +21,7 @@ from utilities.atomicwrites import writer
 from utilities.functions import ensure_class
 from utilities.iterables import OneEmptyError, OneNonUniqueError, one
 from utilities.pathlib import get_repo_root
-from utilities.subprocess import cat, ripgrep, run, tee
+from utilities.subprocess import append_text, ripgrep, run
 from utilities.tempfile import TemporaryFile
 from utilities.text import strip_and_dedent
 from utilities.version import ParseVersionError, Version, parse_version
@@ -122,17 +122,13 @@ def add_envrc(
             #!/usr/bin/env sh
             # shellcheck source=/dev/null
         """)
-        append_text_temp(
-            temp, shebang, skip_if_present=True, flags=MULTILINE, blank_lines=2
-        )
+        append_text(temp, shebang, skip_if_present=True, flags=MULTILINE, blank_lines=2)
 
         echo = strip_and_dedent("""
             # echo
             echo_date() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" >&2; }
         """)
-        append_text_temp(
-            temp, echo, skip_if_present=True, flags=MULTILINE, blank_lines=2
-        )
+        append_text(temp, echo, skip_if_present=True, flags=MULTILINE, blank_lines=2)
 
         if uv:
             uv_sync_args: list[str] = ["uv", "sync"]
@@ -158,31 +154,9 @@ def add_envrc(
                 fi
                 {uv_sync}
             """)
-            append_text_temp(
+            append_text(
                 temp, uv_text, skip_if_present=True, flags=MULTILINE, blank_lines=2
             )
-
-
-def append_text_temp(
-    path: PathLike,
-    text: str,
-    /,
-    *,
-    sudo: bool = False,
-    skip_if_present: bool = False,
-    flags: int = 0,
-    blank_lines: int = 1,
-) -> None:
-    """Append text to a file."""
-    try:
-        existing = cat(path, sudo=sudo)
-    except (CalledProcessError, FileNotFoundError):
-        tee(path, text, sudo=sudo, append=True)
-        return
-    if skip_if_present and (search(escape(text), existing, flags=flags) is not None):
-        return
-    full = "".join([*repeat("\n", times=blank_lines), text])
-    tee(path, full, sudo=sudo, append=True)
 
 
 ##
