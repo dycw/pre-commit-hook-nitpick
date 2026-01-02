@@ -935,6 +935,9 @@ def update_action_file_extensions(
             modifications.add(path)
 
 
+##
+
+
 def update_action_versions() -> None:
     try:
         paths = list(Path(".github").rglob("**/*.yaml"))
@@ -1125,6 +1128,7 @@ __all__ = [
     "run_ripgrep_and_replace",
     "set_version",
     "update_action_file_extensions",
+    "update_action_versions",
     "yield_bumpversion_toml",
     "yield_json_dict",
     "yield_text_file",
