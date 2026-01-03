@@ -83,7 +83,7 @@ def _main(settings: Settings, /) -> None:
         add_envrc(
             modifications=modifications,
             uv=settings.envrc__uv,
-            version=settings.python_version,
+            python_version=settings.python_version,
             script=settings.script,
         )
     if (
@@ -142,7 +142,7 @@ def _main(settings: Settings, /) -> None:
     ):
         add_pyproject_toml(
             modifications=modifications,
-            version=settings.python_version,
+            python_version=settings.python_version,
             description=settings.description,
             package_name=settings.package_name,
             readme=settings.readme,
@@ -154,7 +154,7 @@ def _main(settings: Settings, /) -> None:
     if settings.pyright:
         add_pyrightconfig_json(
             modifications=modifications,
-            version=settings.python_version,
+            python_version=settings.python_version,
             script=settings.script,
         )
     if (
@@ -179,7 +179,9 @@ def _main(settings: Settings, /) -> None:
             description=settings.description,
         )
     if settings.ruff:
-        add_ruff_toml(modifications=modifications, version=settings.python_version)
+        add_ruff_toml(
+            modifications=modifications, python_version=settings.python_version
+        )
     if settings.run_version_bump:
         run_bump_my_version(modifications=modifications)
     if len(modifications) >= 1:
