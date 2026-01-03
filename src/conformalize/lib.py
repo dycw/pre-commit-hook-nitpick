@@ -114,7 +114,7 @@ def add_envrc(
     *,
     modifications: MutableSet[Path] | None = None,
     uv: bool = False,
-    version: str = SETTINGS.python_version,
+    python_version: str = SETTINGS.python_version,
     script: str | None = SETTINGS.script,
 ) -> None:
     with yield_text_file(ENVRC, modifications=modifications) as temp:
@@ -142,7 +142,7 @@ def add_envrc(
                 # uv
                 export UV_MANAGED_PYTHON='true'
                 export UV_PRERELEASE='disallow'
-                export UV_PYTHON='{version}'
+                export UV_PYTHON='{python_version}'
                 if ! command -v uv >/dev/null 2>&1; then
                     echo_date "ERROR: 'uv' not found" && exit 1
                 fi
@@ -472,7 +472,7 @@ def _add_pre_commit_config_repo(
 def add_pyproject_toml(
     *,
     modifications: MutableSet[Path] | None = None,
-    version: str = SETTINGS.python_version,
+    python_version: str = SETTINGS.python_version,
     description: str | None = SETTINGS.description,
     package_name: str | None = SETTINGS.package_name,
     readme: bool = SETTINGS.readme,
@@ -486,7 +486,7 @@ def add_pyproject_toml(
         build_system["build-backend"] = "uv_build"
         build_system["requires"] = ["uv_build"]
         project = get_table(doc, "project")
-        project["requires-python"] = f">= {version}"
+        project["requires-python"] = f">= {python_version}"
         if description is not None:
             project["description"] = description
         if package_name is not None:
@@ -526,14 +526,14 @@ def add_pyproject_toml(
 def add_pyrightconfig_json(
     *,
     modifications: MutableSet[Path] | None = None,
-    version: str = SETTINGS.python_version,
+    python_version: str = SETTINGS.python_version,
     script: str | None = SETTINGS.script,
 ) -> None:
     with yield_json_dict(PYRIGHTCONFIG_JSON, modifications=modifications) as dict_:
         dict_["deprecateTypingAliases"] = True
         dict_["enableReachabilityAnalysis"] = False
         dict_["include"] = ["src" if script is None else script]
-        dict_["pythonVersion"] = version
+        dict_["pythonVersion"] = python_version
         dict_["reportCallInDefaultInitializer"] = True
         dict_["reportImplicitOverride"] = True
         dict_["reportImplicitStringConcatenation"] = True
@@ -636,10 +636,10 @@ def add_readme_md(
 def add_ruff_toml(
     *,
     modifications: MutableSet[Path] | None = None,
-    version: str = SETTINGS.python_version,
+    python_version: str = SETTINGS.python_version,
 ) -> None:
     with yield_toml_doc(RUFF_TOML, modifications=modifications) as doc:
-        doc["target-version"] = f"py{version.replace('.', '')}"
+        doc["target-version"] = f"py{python_version.replace('.', '')}"
         doc["unsafe-fixes"] = True
         fmt = get_table(doc, "format")
         fmt["preview"] = True
