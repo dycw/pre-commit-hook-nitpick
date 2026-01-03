@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/dycw/conformalize
-    rev: 0.10.4
+    rev: 0.10.5
     hooks:
       - args:
           - --description=Project conformalizer
