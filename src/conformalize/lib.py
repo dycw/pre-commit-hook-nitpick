@@ -945,9 +945,8 @@ def run_action_pyright_dict(
     token_uv: bool | str = False,
 ) -> StrDict:
     with_: StrDict = {"python-version": python_version}
-    if token_checkout:
-        add_token_to_with_dict(with_, "token-checkout", token=token_checkout)
-        add_token_to_with_dict(with_, "token-uv", token=token_uv)
+    add_token_to_with_dict(with_, "token-checkout", token=token_checkout)
+    add_token_to_with_dict(with_, "token-uv", token=token_uv)
     return {
         "name": "Run 'pyright'",
         "uses": "dycw/action-pyright@latest",
