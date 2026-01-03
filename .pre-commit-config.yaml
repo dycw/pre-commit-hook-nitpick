@@ -16,6 +16,7 @@ repos:
           - --github--push--publish
           - --github--push--tag
           - --package-name=dycw-conformalize
+          - --pre-commit--dycw
           - --pre-commit--prettier
           - --pre-commit--ruff
           - --pre-commit--taplo
@@ -46,6 +47,11 @@ repos:
         args:
           - --autofix
       - id: trailing-whitespace
+  - repo: https://github.com/dycw/actions
+    rev: 0.3.25
+    hooks:
+      - id: format-requirements
+      - id: replace-sequence-strs
   - repo: local
     hooks:
       - id: prettier
