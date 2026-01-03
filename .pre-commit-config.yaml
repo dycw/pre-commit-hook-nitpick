@@ -48,7 +48,7 @@ repos:
           - --autofix
       - id: trailing-whitespace
   - repo: https://github.com/dycw/actions
-    rev: 0.3.29
+    rev: 0.3.30
     hooks:
       - id: format-requirements
       - id: replace-sequence-strs
