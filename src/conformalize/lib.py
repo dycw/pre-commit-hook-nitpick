@@ -213,9 +213,9 @@ def add_github_pull_request_yaml(
             )
         if (
             pytest__all_versions
-            or pytest__os__windows
             or pytest__os__macos
             or pytest__os__ubuntu
+            or pytest__os__windows
             or pytest__resolution__highest
             or pytest__resolution__lowest_direct
         ):
@@ -237,12 +237,12 @@ def add_github_pull_request_yaml(
             strategy_dict["fail-fast"] = False
             matrix = get_dict(strategy_dict, "matrix")
             os = get_list(matrix, "os")
-            if pytest__os__windows:
-                ensure_contains(os, "windows-latest")
             if pytest__os__macos:
                 ensure_contains(os, "macos-latest")
             if pytest__os__ubuntu:
                 ensure_contains(os, "ubuntu-latest")
+            if pytest__os__windows:
+                ensure_contains(os, "windows-latest")
             python_version_dict = get_list(matrix, "python-version")
             ensure_contains(python_version_dict, python_version)
             if pytest__all_versions:
