@@ -92,10 +92,7 @@ def _main(settings: Settings, /) -> None:
         or settings.github__pull_request__pytest__os__windows
         or settings.github__pull_request__pytest__os__macos
         or settings.github__pull_request__pytest__os__ubuntu
-        or settings.github__pull_request__pytest__python_version__default
         or settings.github__pull_request__pytest__all_versions
-        or settings.github__pull_request__pytest__python_version__3_13
-        or settings.github__pull_request__pytest__python_version__3_14
         or settings.github__pull_request__pytest__resolution__highest
         or settings.github__pull_request__pytest__resolution__lowest_direct
         or settings.github__pull_request__ruff
