@@ -196,7 +196,9 @@ def add_github_pull_request_yaml(
             pre_commit_dict = get_dict(jobs, "pre-commit")
             pre_commit_dict["runs-on"] = "ubuntu-latest"
             steps = get_list(pre_commit_dict, "steps")
-            ensure_contains(steps, run_action_pre_commit_dict(token_checkout=True))
+            ensure_contains(
+                steps, run_action_pre_commit_dict(token_checkout=True, token_uv=True)
+            )
         if pyright:
             pyright_dict = get_dict(jobs, "pyright")
             pyright_dict["runs-on"] = "ubuntu-latest"
@@ -204,7 +206,7 @@ def add_github_pull_request_yaml(
             steps_dict = ensure_contains_partial(
                 steps,
                 run_action_pyright_dict(
-                    python_version=python_version, token_checkout=True
+                    python_version=python_version, token_checkout=True, token_uv=True
                 ),
             )
             if script is not None:
@@ -230,7 +232,7 @@ def add_github_pull_request_yaml(
             pytest_dict["runs-on"] = "${{matrix.os}}"
             steps = get_list(pytest_dict, "steps")
             steps_dict = ensure_contains_partial(
-                steps, run_action_pytest_dict(token=True)
+                steps, run_action_pytest_dict(token_checkout=True, token_uv=True)
             )
             if script is not None:
                 with_ = get_dict(steps_dict, "with")
@@ -265,7 +267,9 @@ def add_github_pull_request_yaml(
             ruff_dict = get_dict(jobs, "ruff")
             ruff_dict["runs-on"] = "ubuntu-latest"
             steps = get_list(ruff_dict, "steps")
-            ensure_contains(steps, run_action_ruff_dict(token=True))
+            ensure_contains(
+                steps, run_action_ruff_dict(token_checkout=True, token_ruff=True)
+            )
 
 
 ##
@@ -297,7 +301,7 @@ def add_github_push_yaml(
             publish_dict["runs-on"] = "ubuntu-latest"
             steps = get_list(publish_dict, "steps")
             steps_dict = ensure_contains_partial(
-                steps, run_action_publish_dict(token_checkout=True)
+                steps, run_action_publish_dict(token_checkout=True, token_uv=True)
             )
             if publish__trusted_publishing:
                 with_ = get_dict(steps_dict, "with")
@@ -306,7 +310,9 @@ def add_github_push_yaml(
             tag_dict = get_dict(jobs, "tag")
             tag_dict["runs-on"] = "ubuntu-latest"
             steps = get_list(tag_dict, "steps")
-            steps_dict = ensure_contains_partial(steps, run_action_tag_dict(token=True))
+            steps_dict = ensure_contains_partial(
+                steps, run_action_tag_dict(token_checkout=True, token_uv=True)
+            )
             if tag__major_minor:
                 with_ = get_dict(steps_dict, "with")
                 with_["major-minor"] = True
