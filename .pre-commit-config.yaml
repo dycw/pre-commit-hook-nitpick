@@ -6,7 +6,6 @@ repos:
           - --description=Project conformalizer
           - --envrc
           - --envrc--uv
-          - --github--pull-request--pre-commit
           - --github--pull-request--pyright
           - --github--pull-request--pytest--os--macos
           - --github--pull-request--pytest--os--ubuntu
