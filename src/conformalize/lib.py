@@ -21,6 +21,7 @@ from utilities.atomicwrites import writer
 from utilities.functions import ensure_class
 from utilities.iterables import OneEmptyError, OneNonUniqueError, one
 from utilities.pathlib import get_repo_root
+from utilities.re import extract_groups
 from utilities.subprocess import append_text, ripgrep, run
 from utilities.tempfile import TemporaryFile
 from utilities.text import strip_and_dedent
@@ -35,6 +36,7 @@ from conformalize.constants import (
     ENVRC,
     GITHUB_PULL_REQUEST_YAML,
     GITHUB_PUSH_YAML,
+    MAX_PYTHON_VERSION,
     PRE_COMMIT_CONFIG_YAML,
     PYPROJECT_TOML,
     PYRIGHTCONFIG_JSON,
@@ -170,10 +172,7 @@ def add_github_pull_request_yaml(
     pytest__os__windows: bool = SETTINGS.github__pull_request__pytest__os__windows,
     pytest__os__macos: bool = SETTINGS.github__pull_request__pytest__os__macos,
     pytest__os__ubuntu: bool = SETTINGS.github__pull_request__pytest__os__ubuntu,
-    pytest__python_version__default: bool = SETTINGS.github__pull_request__pytest__python_version__default,
-    pytest__python_version__3_12: bool = SETTINGS.github__pull_request__pytest__python_version__3_12,
-    pytest__python_version__3_13: bool = SETTINGS.github__pull_request__pytest__python_version__3_13,
-    pytest__python_version__3_14: bool = SETTINGS.github__pull_request__pytest__python_version__3_14,
+    pytest__all_versions: bool = SETTINGS.github__pull_request__pytest__all_versions,
     pytest__resolution__highest: bool = SETTINGS.github__pull_request__pytest__resolution__highest,
     pytest__resolution__lowest_direct: bool = SETTINGS.github__pull_request__pytest__resolution__lowest_direct,
     pytest__timeout: int | None = SETTINGS.pytest__timeout,
@@ -216,10 +215,7 @@ def add_github_pull_request_yaml(
             pytest__os__windows
             or pytest__os__macos
             or pytest__os__ubuntu
-            or pytest__python_version__default
-            or pytest__python_version__3_12
-            or pytest__python_version__3_13
-            or pytest__python_version__3_14
+            or pytest__all_versions
             or pytest__resolution__highest
             or pytest__resolution__lowest_direct
         ):
@@ -248,14 +244,9 @@ def add_github_pull_request_yaml(
             if pytest__os__ubuntu:
                 ensure_contains(os, "ubuntu-latest")
             python_version_dict = get_list(matrix, "python-version")
-            if pytest__python_version__default:
-                ensure_contains(python_version_dict, python_version)
-            if pytest__python_version__3_12:
+            ensure_contains(python_version_dict, python_version)
+            if pytest__all_versions:
                 ensure_contains(python_version_dict, "3.12")
-            if pytest__python_version__3_13:
-                ensure_contains(python_version_dict, "3.13")
-            if pytest__python_version__3_14:
-                ensure_contains(python_version_dict, "3.14")
             resolution = get_list(matrix, "resolution")
             if pytest__resolution__highest:
                 ensure_contains(resolution, "highest")
@@ -1197,6 +1188,29 @@ def yield_json_dict(
 ##
 
 
+def yield_python_versions(
+    version: str, /, *, max_: str = MAX_PYTHON_VERSION
+) -> Iterator[str]:
+    major, minor = _yield_python_version_tuple(version)
+    max_major, max_minor = _yield_python_version_tuple(max_)
+    if major != max_major:
+        msg = f"Major versions must be equal; got {major} and {max_major}"
+        raise ValueError(msg)
+    if minor > max_minor:
+        msg = f"Minor version must be at most {max_minor}; got {minor}"
+        raise ValueError(msg)
+    for i in range(minor, max_minor + 1):
+        yield f"{major}.{i}"
+
+
+def _yield_python_version_tuple(version: str, /) -> tuple[int, int]:
+    major, minor = extract_groups(r"^(\d+)\.(\d+)$", version)
+    return int(major), int(minor)
+
+
+##
+
+
 @contextmanager
 def yield_text_file(
     path: PathLike, /, *, modifications: MutableSet[Path] | None = None
@@ -1319,6 +1333,7 @@ __all__ = [
     "yaml_dump",
     "yield_bumpversion_toml",
     "yield_json_dict",
+    "yield_python_versions",
     "yield_text_file",
     "yield_toml_doc",
     "yield_write_context",

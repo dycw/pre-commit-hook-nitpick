@@ -13,6 +13,7 @@ ENVRC = Path(".envrc")
 GITHUB_WORKFLOWS = Path(".github/workflows")
 GITHUB_PULL_REQUEST_YAML = GITHUB_WORKFLOWS / "pull-request.yaml"
 GITHUB_PUSH_YAML = GITHUB_WORKFLOWS / "push.yaml"
+MAX_PYTHON_VERSION = "3.14"
 PRE_COMMIT_CONFIG_YAML = Path(".pre-commit-config.yaml")
 PYPROJECT_TOML = Path("pyproject.toml")
 PYRIGHTCONFIG_JSON = Path("pyrightconfig.json")
@@ -33,6 +34,7 @@ __all__ = [
     "GITHUB_PULL_REQUEST_YAML",
     "GITHUB_PUSH_YAML",
     "GITHUB_WORKFLOWS",
+    "MAX_PYTHON_VERSION",
     "PRE_COMMIT_CONFIG_YAML",
     "PYPROJECT_TOML",
     "PYRIGHTCONFIG_JSON",
