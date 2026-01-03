@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/dycw/conformalize
-    rev: 0.10.7
+    rev: 0.10.8
     hooks:
       - args:
           - --description=Project conformalizer
@@ -48,7 +48,7 @@ repos:
           - --autofix
       - id: trailing-whitespace
   - repo: https://github.com/dycw/actions
-    rev: 0.3.25
+    rev: 0.3.26
     hooks:
       - id: format-requirements
       - id: replace-sequence-strs
