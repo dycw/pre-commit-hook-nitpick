@@ -246,7 +246,9 @@ def add_github_pull_request_yaml(
             python_version_dict = get_list(matrix, "python-version")
             ensure_contains(python_version_dict, python_version)
             if pytest__all_versions:
-                ensure_contains(python_version_dict, "3.12")
+                ensure_contains(
+                    python_version_dict, *yield_python_versions(python_version)
+                )
             resolution = get_list(matrix, "resolution")
             if pytest__resolution__highest:
                 ensure_contains(resolution, "highest")
