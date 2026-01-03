@@ -923,8 +923,6 @@ def run_action_publish_dict(
     with_: StrDict = {}
     add_token_to_with_dict(with_, "token-checkout", token=token_checkout)
     add_token_to_with_dict(with_, "token-uv", token=token_uv)
-    if token_checkout:
-        with_["token"] = "${{secrets.GITHUB_TOKEN}}"  # noqa: S105
     if username is not None:
         with_["username"] = username
     if password is not None:
