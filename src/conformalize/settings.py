@@ -26,17 +26,8 @@ class Settings:
     github__pull_request__pytest__os__ubuntu: bool = option(
         default=False, help="Set up 'pull-request.yaml' pytest with Ubuntu"
     )
-    github__pull_request__pytest__python_version__default: bool = option(
-        default=False, help="Set up 'pull-request.yaml' pytest with default Python"
-    )
-    github__pull_request__pytest__python_version__3_12: bool = option(
-        default=False, help="Set up 'pull-request.yaml' pytest with Python 3.12"
-    )
-    github__pull_request__pytest__python_version__3_13: bool = option(
-        default=False, help="Set up 'pull-request.yaml' pytest with Python 3.13"
-    )
-    github__pull_request__pytest__python_version__3_14: bool = option(
-        default=False, help="Set up 'pull-request.yaml' pytest with Python 3.14"
+    github__pull_request__pytest__all_versions: bool = option(
+        default=False, help="Set up 'pull-request.yaml' pytest with all versions"
     )
     github__pull_request__pytest__resolution__highest: bool = option(
         default=False,

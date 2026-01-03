@@ -92,10 +92,7 @@ def _main(settings: Settings, /) -> None:
         or settings.github__pull_request__pytest__os__windows
         or settings.github__pull_request__pytest__os__macos
         or settings.github__pull_request__pytest__os__ubuntu
-        or settings.github__pull_request__pytest__python_version__default
-        or settings.github__pull_request__pytest__python_version__3_12
-        or settings.github__pull_request__pytest__python_version__3_13
-        or settings.github__pull_request__pytest__python_version__3_14
+        or settings.github__pull_request__pytest__all_versions
         or settings.github__pull_request__pytest__resolution__highest
         or settings.github__pull_request__pytest__resolution__lowest_direct
         or settings.github__pull_request__ruff
@@ -107,10 +104,7 @@ def _main(settings: Settings, /) -> None:
             pytest__os__windows=settings.github__pull_request__pytest__os__windows,
             pytest__os__macos=settings.github__pull_request__pytest__os__macos,
             pytest__os__ubuntu=settings.github__pull_request__pytest__os__ubuntu,
-            pytest__python_version__default=settings.github__pull_request__pytest__python_version__default,
-            pytest__python_version__3_12=settings.github__pull_request__pytest__python_version__3_12,
-            pytest__python_version__3_13=settings.github__pull_request__pytest__python_version__3_13,
-            pytest__python_version__3_14=settings.github__pull_request__pytest__python_version__3_14,
+            pytest__all_versions=settings.github__pull_request__pytest__all_versions,
             pytest__resolution__highest=settings.github__pull_request__pytest__resolution__highest,
             pytest__resolution__lowest_direct=settings.github__pull_request__pytest__resolution__lowest_direct,
             pytest__timeout=settings.pytest__timeout,
