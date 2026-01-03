@@ -12,8 +12,9 @@ jobs:
       - name: Run 'pyright'
         uses: dycw/action-pyright@latest
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
           python-version: "3.12"
+          token-checkout: ${{secrets.GITHUB_TOKEN}}
+          token-uv: ${{secrets.GITHUB_TOKEN}}
   pytest:
     env:
       CI: "1"
@@ -24,9 +25,10 @@ jobs:
       - name: Run 'pytest'
         uses: dycw/action-pytest@latest
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
           python-version: ${{matrix.python-version}}
           resolution: ${{matrix.resolution}}
+          token-checkout: ${{secrets.GITHUB_TOKEN}}
+          token-uv: ${{secrets.GITHUB_TOKEN}}
     strategy:
       fail-fast: false
       matrix:
@@ -43,4 +45,5 @@ jobs:
       - name: Run 'ruff'
         uses: dycw/action-ruff@latest
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
+          token-checkout: ${{secrets.GITHUB_TOKEN}}
+          token-ruff: ${{secrets.GITHUB_TOKEN}}
