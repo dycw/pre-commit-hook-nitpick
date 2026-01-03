@@ -17,6 +17,9 @@ class Settings:
     github__pull_request__pyright: bool = option(
         default=False, help="Set up 'pull-request.yaml' pyright"
     )
+    github__pull_request__pytest__all_versions: bool = option(
+        default=False, help="Set up 'pull-request.yaml' pytest with all versions"
+    )
     github__pull_request__pytest__os__windows: bool = option(
         default=False, help="Set up 'pull-request.yaml' pytest with Windows"
     )
@@ -25,9 +28,6 @@ class Settings:
     )
     github__pull_request__pytest__os__ubuntu: bool = option(
         default=False, help="Set up 'pull-request.yaml' pytest with Ubuntu"
-    )
-    github__pull_request__pytest__all_versions: bool = option(
-        default=False, help="Set up 'pull-request.yaml' pytest with all versions"
     )
     github__pull_request__pytest__resolution__highest: bool = option(
         default=False,

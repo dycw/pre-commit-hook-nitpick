@@ -169,10 +169,10 @@ def add_github_pull_request_yaml(
     modifications: MutableSet[Path] | None = None,
     pre_commit: bool = SETTINGS.github__pull_request__pre_commit,
     pyright: bool = SETTINGS.github__pull_request__pyright,
-    pytest__os__windows: bool = SETTINGS.github__pull_request__pytest__os__windows,
+    pytest__all_versions: bool = SETTINGS.github__pull_request__pytest__all_versions,
     pytest__os__macos: bool = SETTINGS.github__pull_request__pytest__os__macos,
     pytest__os__ubuntu: bool = SETTINGS.github__pull_request__pytest__os__ubuntu,
-    pytest__all_versions: bool = SETTINGS.github__pull_request__pytest__all_versions,
+    pytest__os__windows: bool = SETTINGS.github__pull_request__pytest__os__windows,
     pytest__resolution__highest: bool = SETTINGS.github__pull_request__pytest__resolution__highest,
     pytest__resolution__lowest_direct: bool = SETTINGS.github__pull_request__pytest__resolution__lowest_direct,
     pytest__timeout: int | None = SETTINGS.pytest__timeout,
@@ -212,10 +212,10 @@ def add_github_pull_request_yaml(
                 ),
             )
         if (
-            pytest__os__windows
+            pytest__all_versions
+            or pytest__os__windows
             or pytest__os__macos
             or pytest__os__ubuntu
-            or pytest__all_versions
             or pytest__resolution__highest
             or pytest__resolution__lowest_direct
         ):

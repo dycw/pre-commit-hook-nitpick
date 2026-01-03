@@ -89,10 +89,10 @@ def _main(settings: Settings, /) -> None:
     if (
         settings.github__pull_request__pre_commit
         or settings.github__pull_request__pyright
+        or settings.github__pull_request__pytest__all_versions
         or settings.github__pull_request__pytest__os__windows
         or settings.github__pull_request__pytest__os__macos
         or settings.github__pull_request__pytest__os__ubuntu
-        or settings.github__pull_request__pytest__all_versions
         or settings.github__pull_request__pytest__resolution__highest
         or settings.github__pull_request__pytest__resolution__lowest_direct
         or settings.github__pull_request__ruff
@@ -101,10 +101,10 @@ def _main(settings: Settings, /) -> None:
             modifications=modifications,
             pre_commit=settings.github__pull_request__pre_commit,
             pyright=settings.github__pull_request__pyright,
+            pytest__all_versions=settings.github__pull_request__pytest__all_versions,
             pytest__os__windows=settings.github__pull_request__pytest__os__windows,
             pytest__os__macos=settings.github__pull_request__pytest__os__macos,
             pytest__os__ubuntu=settings.github__pull_request__pytest__os__ubuntu,
-            pytest__all_versions=settings.github__pull_request__pytest__all_versions,
             pytest__resolution__highest=settings.github__pull_request__pytest__resolution__highest,
             pytest__resolution__lowest_direct=settings.github__pull_request__pytest__resolution__lowest_direct,
             pytest__timeout=settings.pytest__timeout,
