@@ -787,7 +787,7 @@ def get_partial_dict(
     iterable: Iterable[Any], dict_: StrDict, /, *, skip_log: bool = False
 ) -> StrDict:
     try:
-        return one(i for i in iterable if _is_partial_dict(i, dict_))
+        return one(i for i in iterable if is_partial_dict(dict_, i))
     except OneEmptyError:
         if not skip_log:
             LOGGER.exception(
@@ -807,7 +807,7 @@ def get_partial_dict(
         raise
 
 
-def _is_partial_dict(obj: Any, dict_: StrDict, /) -> bool:
+def is_partial_dict(obj: Any, dict_: StrDict, /) -> bool:
     if not isinstance(obj, dict):
         return False
     results: dict[str, bool] = {}
@@ -818,7 +818,7 @@ def _is_partial_dict(obj: Any, dict_: StrDict, /) -> bool:
             results[key] = False
         else:
             if isinstance(obj_value, dict) and isinstance(dict_value, dict):
-                results[key] = _is_partial_dict(obj_value, dict_value)
+                results[key] = is_partial_dict(obj_value, dict_value)
             else:
                 results[key] = obj_value == dict_value
     return all(results.values())
@@ -1244,6 +1244,7 @@ __all__ = [
     "get_version_from_bumpversion_toml",
     "get_version_from_git_show",
     "get_version_from_git_tag",
+    "is_partial_dict",
     "run_action_pre_commit_dict",
     "run_action_publish_dict",
     "run_action_pyright_dict",

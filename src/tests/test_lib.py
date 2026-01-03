@@ -3,12 +3,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from pytest import mark, param
+from utilities.iterables import one
 
 if TYPE_CHECKING:
     from conformalize.types import StrDict
 
 
-from conformalize.lib import _is_partial_dict
+from conformalize.lib import get_partial_dict, is_partial_dict
+
+
+class TestGetPartialDict:
+    def test_main(self) -> None:
+        url = "https://github.com/owner/repo"
+        repos_list = [
+            {"repo": url, "rev": "v6.0.0", "hooks": [{"id": "id1"}, {"id": "id2"}]}
+        ]
+        result = get_partial_dict(repos_list, {"repo": url})
+        assert result == one(repos_list)
 
 
 class TestIsPartialDict:
@@ -33,4 +44,4 @@ class TestIsPartialDict:
         ],
     )
     def test_main(self, *, obj: Any, dict_: StrDict, expected: bool) -> None:
-        assert _is_partial_dict(obj, dict_) is expected
+        assert is_partial_dict(obj, dict_) is expected
