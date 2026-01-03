@@ -203,15 +203,15 @@ def add_github_pull_request_yaml(
             pyright_dict = get_dict(jobs, "pyright")
             pyright_dict["runs-on"] = "ubuntu-latest"
             steps = get_list(pyright_dict, "steps")
-            steps_dict = ensure_contains_partial(
+            ensure_contains(
                 steps,
                 run_action_pyright_dict(
-                    python_version=python_version, token_checkout=True, token_uv=True
+                    python_version=python_version,
+                    script=script,
+                    token_checkout=True,
+                    token_uv=True,
                 ),
             )
-            if script is not None:
-                with_ = get_dict(steps_dict, "with")
-                with_["with-requirements"] = script
         if (
             pytest__os__windows
             or pytest__os__macos
@@ -231,12 +231,12 @@ def add_github_pull_request_yaml(
             )
             pytest_dict["runs-on"] = "${{matrix.os}}"
             steps = get_list(pytest_dict, "steps")
-            steps_dict = ensure_contains_partial(
-                steps, run_action_pytest_dict(token_checkout=True, token_uv=True)
+            ensure_contains(
+                steps,
+                run_action_pytest_dict(
+                    script=script, token_checkout=True, token_uv=True
+                ),
             )
-            if script is not None:
-                with_ = get_dict(steps_dict, "with")
-                with_["with-requirements"] = script
             strategy_dict = get_dict(pytest_dict, "strategy")
             strategy_dict["fail-fast"] = False
             matrix = get_dict(strategy_dict, "matrix")
@@ -731,6 +731,13 @@ def add_token_to_with_dict(
             assert_never(never)
 
 
+def add_with_requirements_to_with_dict(
+    dict_: StrDict, /, *, script: str | None = None
+) -> None:
+    if script is not None:
+        dict_["with-requirements"] = script
+
+
 ##
 
 
@@ -941,10 +948,12 @@ def run_action_publish_dict(
 def run_action_pyright_dict(
     *,
     python_version: str = SETTINGS.python_version,
+    script: str | None = SETTINGS.script,
     token_checkout: bool | str = False,
     token_uv: bool | str = False,
 ) -> StrDict:
     with_: StrDict = {"python-version": python_version}
+    add_with_requirements_to_with_dict(with_, script=script)
     add_token_to_with_dict(with_, "token-checkout", token=token_checkout)
     add_token_to_with_dict(with_, "token-uv", token=token_uv)
     return {
@@ -955,12 +964,16 @@ def run_action_pyright_dict(
 
 
 def run_action_pytest_dict(
-    *, token_checkout: bool | str = False, token_uv: bool | str = False
+    *,
+    script: str | None = SETTINGS.script,
+    token_checkout: bool | str = False,
+    token_uv: bool | str = False,
 ) -> StrDict:
     with_: StrDict = {
         "python-version": "${{matrix.python-version}}",
         "resolution": "${{matrix.resolution}}",
     }
+    add_with_requirements_to_with_dict(with_, script=script)
     add_token_to_with_dict(with_, "token-checkout", token=token_checkout)
     add_token_to_with_dict(with_, "token-uv", token=token_uv)
     return {"name": "Run 'pytest'", "uses": "dycw/action-pytest@latest", "with": with_}
@@ -1274,6 +1287,7 @@ __all__ = [
     "add_readme_md",
     "add_ruff_toml",
     "add_token_to_with_dict",
+    "add_with_requirements_to_with_dict",
     "check_versions",
     "ensure_aot_contains",
     "ensure_contains",
