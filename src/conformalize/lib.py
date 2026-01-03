@@ -169,10 +169,10 @@ def add_github_pull_request_yaml(
     modifications: MutableSet[Path] | None = None,
     pre_commit: bool = SETTINGS.github__pull_request__pre_commit,
     pyright: bool = SETTINGS.github__pull_request__pyright,
-    pytest__os__windows: bool = SETTINGS.github__pull_request__pytest__os__windows,
+    pytest__all_versions: bool = SETTINGS.github__pull_request__pytest__all_versions,
     pytest__os__macos: bool = SETTINGS.github__pull_request__pytest__os__macos,
     pytest__os__ubuntu: bool = SETTINGS.github__pull_request__pytest__os__ubuntu,
-    pytest__all_versions: bool = SETTINGS.github__pull_request__pytest__all_versions,
+    pytest__os__windows: bool = SETTINGS.github__pull_request__pytest__os__windows,
     pytest__resolution__highest: bool = SETTINGS.github__pull_request__pytest__resolution__highest,
     pytest__resolution__lowest_direct: bool = SETTINGS.github__pull_request__pytest__resolution__lowest_direct,
     pytest__timeout: int | None = SETTINGS.pytest__timeout,
@@ -212,10 +212,10 @@ def add_github_pull_request_yaml(
                 ),
             )
         if (
-            pytest__os__windows
+            pytest__all_versions
             or pytest__os__macos
             or pytest__os__ubuntu
-            or pytest__all_versions
+            or pytest__os__windows
             or pytest__resolution__highest
             or pytest__resolution__lowest_direct
         ):
@@ -237,12 +237,12 @@ def add_github_pull_request_yaml(
             strategy_dict["fail-fast"] = False
             matrix = get_dict(strategy_dict, "matrix")
             os = get_list(matrix, "os")
-            if pytest__os__windows:
-                ensure_contains(os, "windows-latest")
             if pytest__os__macos:
                 ensure_contains(os, "macos-latest")
             if pytest__os__ubuntu:
                 ensure_contains(os, "ubuntu-latest")
+            if pytest__os__windows:
+                ensure_contains(os, "windows-latest")
             python_version_dict = get_list(matrix, "python-version")
             ensure_contains(python_version_dict, python_version)
             if pytest__all_versions:
