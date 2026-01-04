@@ -115,7 +115,8 @@ def add_coveragerc_toml(*, modifications: MutableSet[Path] | None = None) -> Non
 def add_envrc(
     *,
     modifications: MutableSet[Path] | None = None,
-    uv: bool = False,
+    uv: bool = SETTINGS.envrc__uv,
+    uv__native_tls: bool = SETTINGS.envrc__uv__native_tls,
     python_version: str = SETTINGS.python_version,
     script: str | None = SETTINGS.script,
 ) -> None:
@@ -133,32 +134,56 @@ def add_envrc(
         append_text(temp, echo, skip_if_present=True, flags=MULTILINE, blank_lines=2)
 
         if uv:
-            uv_sync_args: list[str] = ["uv", "sync"]
-            if script is None:
-                uv_sync_args.extend(["--all-extras", "--all-groups"])
-            uv_sync_args.extend(["--active", "--locked"])
-            if script is not None:
-                uv_sync_args.extend(["--script", script])
-            uv_sync = join(uv_sync_args)
-            uv_text = strip_and_dedent(f"""
-                # uv
-                export UV_MANAGED_PYTHON='true'
-                export UV_PRERELEASE='disallow'
-                export UV_PYTHON='{python_version}'
-                if ! command -v uv >/dev/null 2>&1; then
-                    echo_date "ERROR: 'uv' not found" && exit 1
-                fi
-                activate='.venv/bin/activate'
-                if [ -f $activate ]; then
-                    . $activate
-                else
-                    uv venv
-                fi
-                {uv_sync}
-            """)
             append_text(
-                temp, uv_text, skip_if_present=True, flags=MULTILINE, blank_lines=2
+                temp,
+                _add_envrc_uv_text(
+                    native_tls=uv__native_tls,
+                    python_version=python_version,
+                    script=script,
+                ),
+                skip_if_present=True,
+                flags=MULTILINE,
+                blank_lines=2,
             )
+
+
+def _add_envrc_uv_text(
+    *,
+    native_tls: bool = SETTINGS.envrc__uv__native_tls,
+    python_version: str = SETTINGS.python_version,
+    script: str | None = SETTINGS.script,
+) -> str:
+    lines: list[str] = [
+        strip_and_dedent("""
+            # uv
+            export UV_MANAGED_PYTHON='true'
+        """)
+    ]
+    if native_tls:
+        lines.append("export UV_NATIVE_TLS='true'")
+    lines.append(
+        strip_and_dedent(f"""
+            export UV_PRERELEASE='disallow'
+            export UV_PYTHON='{python_version}'
+            if ! command -v uv >/dev/null 2>&1; then
+                echo_date "ERROR: 'uv' not found" && exit 1
+            fi
+            activate='.venv/bin/activate'
+            if [ -f $activate ]; then
+                . $activate
+            else
+                uv venv
+            fi
+        """)
+    )
+    args: list[str] = ["uv", "sync"]
+    if script is None:
+        args.extend(["--all-extras", "--all-groups"])
+    args.extend(["--active", "--locked"])
+    if script is not None:
+        args.extend(["--script", script])
+    lines.append(join(args))
+    return "\n".join(lines)
 
 
 ##

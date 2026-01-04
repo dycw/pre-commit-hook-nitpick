@@ -4,12 +4,39 @@ from typing import TYPE_CHECKING, Any
 
 from pytest import mark, param, raises
 from utilities.iterables import one
+from utilities.text import strip_and_dedent
+
+from conformalize.lib import (
+    _add_envrc_uv_text,
+    get_partial_dict,
+    is_partial_dict,
+    yield_python_versions,
+)
 
 if TYPE_CHECKING:
     from conformalize.types import StrDict
 
 
-from conformalize.lib import get_partial_dict, is_partial_dict, yield_python_versions
+class TestAddEnvrcUvText:
+    def test_main(self) -> None:
+        result = _add_envrc_uv_text()
+        expected = strip_and_dedent("""
+            # uv
+            export UV_MANAGED_PYTHON='true'
+            export UV_PRERELEASE='disallow'
+            export UV_PYTHON='3.14'
+            if ! command -v uv >/dev/null 2>&1; then
+                echo_date "ERROR: 'uv' not found" && exit 1
+            fi
+            activate='.venv/bin/activate'
+            if [ -f $activate ]; then
+                . $activate
+            else
+                uv venv
+            fi
+            uv sync --all-extras --all-groups --active --locked
+        """)
+        assert result == expected
 
 
 class TestGetPartialDict:

@@ -11,6 +11,9 @@ class Settings:
     description: str | None = option(default=None, help="Repo description")
     envrc: bool = option(default=False, help="Set up '.envrc'")
     envrc__uv: bool = option(default=False, help="Set up '.envrc' with uv")
+    envrc__uv__native_tls: bool = option(
+        default=False, help="Set up '.envrc' with uv native TLS"
+    )
     github__pull_request__pre_commit: bool = option(
         default=False, help="Set up 'pull-request.yaml' pre-commit"
     )
