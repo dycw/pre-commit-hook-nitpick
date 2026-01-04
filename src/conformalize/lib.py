@@ -157,8 +157,6 @@ def _add_envrc_uv_text(
         strip_and_dedent("""
             # uv
             export UV_MANAGED_PYTHON='true'
-            export UV_PRERELEASE='disallow'
-            export UV_PYTHON='{python_version}'
         """)
     ]
     if native_tls:
