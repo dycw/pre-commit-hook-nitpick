@@ -79,10 +79,11 @@ def _main(settings: Settings, /) -> None:
     )
     if settings.coverage:
         add_coveragerc_toml(modifications=modifications)
-    if settings.envrc or settings.envrc__uv:
+    if settings.envrc or settings.envrc__uv or settings.envrc__uv__native_tls:
         add_envrc(
             modifications=modifications,
             uv=settings.envrc__uv,
+            uv__native_tls=settings.envrc__uv__native_tls,
             python_version=settings.python_version,
             script=settings.script,
         )
